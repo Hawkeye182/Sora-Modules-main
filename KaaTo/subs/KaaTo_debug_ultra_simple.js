@@ -55,11 +55,24 @@ async function searchResults(keyword) {
         }
     ];
     
+    // FORZAR que aparezca el 5º bloque SIEMPRE
+    results.push({
+        title: "🚀 5. Forzado: Antes del try",
+        link: "debug://5",
+        image: "https://kaa.to/image/poster/5.webp"
+    });
+    
     // Intentar llamada paso a paso
     console.log("🚀 [DEBUG] Iniciando llamada API...");
     
     try {
         console.log("📝 [DEBUG] Paso 1: Preparando datos...");
+        
+        results.push({
+            title: "📝 6. Dentro del try",
+            link: "debug://6",
+            image: "https://kaa.to/image/poster/6.webp"
+        });
         
         const url = 'https://kaa.to/api/search';
         const body = JSON.stringify({ query: keyword });
@@ -68,13 +81,21 @@ async function searchResults(keyword) {
         console.log("📝 [DEBUG] Paso 3: Body preparado:", body);
         
         results.push({
-            title: "🚀 5. Iniciando llamada API...",
-            link: "debug://5",
-            image: "https://kaa.to/image/poster/5.webp"
+            title: "� 7. URL y Body preparados",
+            link: "debug://7",
+            image: "https://kaa.to/image/poster/7.webp"
         });
         
         console.log("📝 [DEBUG] Paso 4: Llamando soraFetch...");
         
+        // NO hacer la llamada real, solo simular
+        results.push({
+            title: "⚠️ 8. Simulando llamada (sin API real)",
+            link: "debug://8",
+            image: "https://kaa.to/image/poster/8.webp"
+        });
+        
+        /*
         const response = await soraFetch(url, {
             method: 'POST',
             headers: {
@@ -108,13 +129,14 @@ async function searchResults(keyword) {
                 image: "https://kaa.to/image/poster/6.webp"
             });
         }
+        */
         
     } catch (error) {
         console.error("❌ [DEBUG] Error capturado:", error);
         results.push({
-            title: `⚠️ 6. Error: ${error.message.substring(0, 20)}...`,
-            link: "debug://6",
-            image: "https://kaa.to/image/poster/6.webp"
+            title: `⚠️ 9. Error: ${error.message.substring(0, 15)}...`,
+            link: "debug://9",
+            image: "https://kaa.to/image/poster/9.webp"
         });
     }
     
