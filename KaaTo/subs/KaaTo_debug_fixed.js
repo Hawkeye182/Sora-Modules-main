@@ -59,18 +59,35 @@ async function searchResults(keyword) {
         }
     ];
     
+    // Agregar debug de entorno primero
+    debugResults.push({
+        title: `🌐 DEBUG: fetch ${typeof fetch !== 'undefined' ? 'disponible' : 'NO disponible'}`,
+        link: "debug://test4",
+        image: "https://kaa.to/image/poster/fetch.webp"
+    });
+    
     // Intentar también hacer una llamada real a la API para diagnosticar
     try {
         console.log("🌐 [DEBUG] Intentando llamada real a API...");
-        const response = await soraFetch('https://kaa.to/api/search', {
+        
+        // Timeout para evitar que se cuelgue
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout 10s')), 10000)
+        );
+        
+        const apiPromise = soraFetch('https://kaa.to/api/search', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'User-Agent': 'Sora/1.0'
             },
             body: JSON.stringify({
                 query: keyword
             })
         });
+        
+        const response = await Promise.race([apiPromise, timeoutPromise]);
         
         if (response && response.ok) {
             const data = await response.json();
@@ -78,22 +95,29 @@ async function searchResults(keyword) {
             
             // Agregar resultado de éxito de API
             debugResults.push({
-                title: `🎯 DEBUG: API OK - ${data.length || 0} resultados`,
+                title: `🎯 DEBUG: API OK - ${Array.isArray(data) ? data.length : 'objeto'} resultados`,
                 link: "debug://api-success",
                 image: "https://kaa.to/image/poster/success.webp"
             });
-        } else {
-            console.log("❌ [DEBUG] API falló:", response);
+        } else if (response) {
+            console.log("❌ [DEBUG] API falló:", response.status, response.statusText);
             debugResults.push({
-                title: "❌ DEBUG: API falló",
+                title: `❌ DEBUG: API falló - ${response.status}`,
                 link: "debug://api-fail",
                 image: "https://kaa.to/image/poster/fail.webp"
+            });
+        } else {
+            console.log("❌ [DEBUG] Sin respuesta de API");
+            debugResults.push({
+                title: "❌ DEBUG: Sin respuesta API",
+                link: "debug://api-null",
+                image: "https://kaa.to/image/poster/null.webp"
             });
         }
     } catch (error) {
         console.error("❌ [DEBUG] Error en API:", error);
         debugResults.push({
-            title: `⚠️ DEBUG: Error API - ${error.message}`,
+            title: `⚠️ DEBUG: Error - ${error.message.substring(0, 30)}`,
             link: "debug://api-error",
             image: "https://kaa.to/image/poster/error.webp"
         });
