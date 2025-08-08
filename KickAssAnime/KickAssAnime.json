@@ -1,0 +1,20 @@
+{
+    "sourceName": "KickAssAnime",
+    "iconUrl": "https://kaa.to/favicon.ico",
+    "author": {
+        "name": "Tu Nombre",
+        "icon": "https://kaa.to/favicon.ico",
+        "url": "https://github.com/tu-usuario"
+    },
+    "version": "1.0.0",
+    "language": "English (SUB/DUB)",
+    "streamType": "HLS",
+    "quality": "1080p",
+    "type": "anime",
+    "baseUrl": "kaa.to",
+    "searchBaseUrl": "https://kaa.to/search?q=%s",
+    "scriptUrl": "https://raw.githubusercontent.com/tu-usuario/tu-repo/main/KickAssAnime/KickAssAnime.js",
+    "asyncJS": true,
+    "streamAsyncJS": true,
+    "softsub": false
+}

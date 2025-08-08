@@ -1,0 +1,19 @@
+{
+    "sourceName": "TEMPLATE - IF YOU SEE THIS, GO EDIT YOUR JSON",
+    "iconUrl": "",
+    "author": {
+        "name": "",
+        "icon": "",
+        "url": ""
+    },
+    "version": "1.0.0",
+    "language": "English (SUB)",
+    "streamType": "HLS",
+    "quality": "720p",
+	"type": "anime",
+    "baseUrl": "",
+    "searchBaseUrl": "",
+    "scriptUrl": "",
+    "asyncJS": true,
+    "streamAsyncJS": true
+ }
