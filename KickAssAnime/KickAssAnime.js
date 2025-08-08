@@ -4,42 +4,59 @@ const BASE_URL = "https://kaa.to/";
 /**
  * Busca anime en el sitio web con la palabra clave dada y devuelve los resultados
  * Implementa doble estrategia: buscador oficial + búsqueda alfabética
+ * Con logging detallado para debug en Sora
  * @param {string} keyword La palabra clave a buscar
  * @returns {Promise<string>} Una promesa que se resuelve con una cadena JSON conteniendo los resultados de búsqueda en el formato: `[{"title": "Título", "image": "URL de imagen", "href": "URL"}, ...]`
  */
 async function searchResults(keyword) {
     try {
+        console.log(`🔍 KickAssAnime: Búsqueda iniciada para "${keyword}"`);
         const keywordLower = keyword.toLowerCase().trim();
+        
+        if (!keywordLower) {
+            console.log(`⚠️ KickAssAnime: Keyword vacía`);
+            return JSON.stringify([]);
+        }
+
         let results = [];
 
         // Método 1: Intentar el buscador oficial de kaa.to
         try {
+            console.log(`📡 KickAssAnime: Intentando buscador oficial...`);
             const searchUrl = `https://kaa.to/search?q=${encodeURIComponent(keyword)}`;
             const searchResponse = await soraFetch(searchUrl);
-            const searchHtml = typeof searchResponse === 'object' ? await searchResponse.text() : await searchResponse;
             
-            // Si el buscador oficial funciona, extraer resultados
-            if (!searchHtml.includes('No Match')) {
-                const officialRegex = /\[(\d{4})\]\((https:\/\/kaa\.to\/([^)]+))\)[\s\S]*?##\s*([^\n]+)/g;
-                const officialMatches = searchHtml.matchAll(officialRegex);
-                const officialMatchesArray = Array.from(officialMatches);
+            if (!searchResponse) {
+                console.log(`❌ KickAssAnime: No response from official search`);
+            } else {
+                const searchHtml = typeof searchResponse === 'object' ? await searchResponse.text() : await searchResponse;
+                console.log(`📄 KickAssAnime: Official search HTML length: ${searchHtml?.length || 0}`);
                 
-                results = officialMatchesArray.map(match => ({
-                    title: match[4].trim(),
-                    image: BASE_URL + "favicon.ico",
-                    href: match[2]
-                }));
-                
-                if (results.length > 0) {
-                    console.log(`✅ Buscador oficial encontró ${results.length} resultados`);
-                    return JSON.stringify(results.slice(0, 10));
+                // Si el buscador oficial funciona, extraer resultados
+                if (searchHtml && !searchHtml.includes('No Match')) {
+                    const officialRegex = /\[(\d{4})\]\((https:\/\/kaa\.to\/([^)]+))\)[\s\S]*?##\s*([^\n]+)/g;
+                    const officialMatches = searchHtml.matchAll(officialRegex);
+                    const officialMatchesArray = Array.from(officialMatches);
+                    
+                    results = officialMatchesArray.map(match => ({
+                        title: match[4].trim(),
+                        image: BASE_URL + "favicon.ico",
+                        href: match[2]
+                    }));
+                    
+                    if (results.length > 0) {
+                        console.log(`✅ KickAssAnime: Buscador oficial encontró ${results.length} resultados`);
+                        return JSON.stringify(results.slice(0, 10));
+                    }
                 }
+                console.log(`🔄 KickAssAnime: Buscador oficial falló, usando método alfabético...`);
             }
         } catch (officialError) {
-            console.log('Buscador oficial falló, usando método alfabético...');
+            console.log(`❌ KickAssAnime: Error en buscador oficial: ${officialError.message}`);
         }
 
         // Método 2: Búsqueda alfabética mejorada (fallback)
+        console.log(`📚 KickAssAnime: Iniciando búsqueda alfabética...`);
         const firstLetter = keywordLower.charAt(0).toUpperCase();
         const searchPages = [];
         
@@ -78,20 +95,41 @@ async function searchResults(keyword) {
             searchPages.push('https://kaa.to/anime');
         }
 
+        console.log(`📖 KickAssAnime: Buscando en ${searchPages.length} páginas: ${searchPages.join(', ')}`);
+
         // Buscar en las páginas seleccionadas
         for (const searchUrl of searchPages) {
             try {
+                console.log(`📡 KickAssAnime: Fetching ${searchUrl}...`);
                 const response = await soraFetch(searchUrl);
+                
+                if (!response) {
+                    console.log(`❌ KickAssAnime: No response from ${searchUrl}`);
+                    continue;
+                }
+                
                 const html = typeof response === 'object' ? await response.text() : await response;
+                console.log(`📄 KickAssAnime: HTML length from ${searchUrl}: ${html?.length || 0}`);
+
+                if (!html) {
+                    console.log(`❌ KickAssAnime: Empty HTML from ${searchUrl}`);
+                    continue;
+                }
 
                 const ANIME_REGEX = /\[(\d{4})\]\((https:\/\/kaa\.to\/([^)]+))\)[\s\S]*?##\s*([^\n]+)/g;
                 const matches = html.matchAll(ANIME_REGEX);
                 const matchesArray = Array.from(matches);
                 
+                console.log(`🔍 KickAssAnime: Found ${matchesArray.length} total anime on page`);
+                
                 const pageResults = matchesArray
                     .filter(match => {
                         const title = match[4]?.toLowerCase() || '';
-                        return title.includes(keywordLower);
+                        const matches = title.includes(keywordLower);
+                        if (matches) {
+                            console.log(`✅ KickAssAnime: Match found: "${match[4]}" contains "${keyword}"`);
+                        }
+                        return matches;
                     })
                     .map(match => ({
                         title: match[4].trim(),
@@ -99,13 +137,14 @@ async function searchResults(keyword) {
                         href: match[2]
                     }));
 
+                console.log(`📊 KickAssAnime: Page results: ${pageResults.length}`);
                 results.push(...pageResults);
                 
                 // Si encontramos suficientes resultados, no seguir buscando
                 if (results.length >= 10) break;
                 
             } catch (pageError) {
-                console.log(`Error en página ${searchUrl}: ${pageError.message}`);
+                console.log(`❌ KickAssAnime: Error en página ${searchUrl}: ${pageError.message}`);
                 continue;
             }
         }
@@ -115,10 +154,23 @@ async function searchResults(keyword) {
             index === self.findIndex(r => r.href === result.href)
         );
 
-        return JSON.stringify(uniqueResults.slice(0, 10));
+        console.log(`🎯 KickAssAnime: Resultados finales: ${uniqueResults.length}`);
+        
+        if (uniqueResults.length > 0) {
+            uniqueResults.forEach((result, index) => {
+                console.log(`   ${index + 1}. "${result.title}" - ${result.href}`);
+            });
+        } else {
+            console.log(`❌ KickAssAnime: No se encontraron resultados para "${keyword}"`);
+        }
+
+        const finalJson = JSON.stringify(uniqueResults.slice(0, 10));
+        console.log(`📤 KickAssAnime: Returning JSON length: ${finalJson.length}`);
+        return finalJson;
 
     } catch (error) {
-        console.log('Error de búsqueda: ' + error.message);
+        console.log(`💥 KickAssAnime: Error fatal en búsqueda: ${error.message}`);
+        console.log(`📍 KickAssAnime: Stack trace: ${error.stack || 'No stack available'}`);
         return JSON.stringify([]);
     }
 }
