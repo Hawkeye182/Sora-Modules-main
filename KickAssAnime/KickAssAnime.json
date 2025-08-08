@@ -2,9 +2,9 @@
     "sourceName": "KickAssAnime",
     "iconUrl": "https://kaa.to/favicon.ico",
     "author": {
-        "name": "Tu Nombre",
+        "name": "Hawk",
         "icon": "https://kaa.to/favicon.ico",
-        "url": "https://github.com/tu-usuario"
+        "url": "https://github.com/Hawkeye182"
     },
     "version": "1.0.0",
     "language": "English (SUB/DUB)",
@@ -13,7 +13,7 @@
     "type": "anime",
     "baseUrl": "kaa.to",
     "searchBaseUrl": "https://kaa.to/search?q=%s",
-    "scriptUrl": "https://raw.githubusercontent.com/tu-usuario/tu-repo/main/KickAssAnime/KickAssAnime.js",
+    "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/main/KickAssAnime/KickAssAnime.js",
     "asyncJS": true,
     "streamAsyncJS": true,
     "softsub": false
