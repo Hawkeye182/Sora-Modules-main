@@ -12,7 +12,8 @@
   "quality": "1080p",
   "type": "anime",
   "baseUrl": "https://kaa.to",
-  "searchBaseUrl": "https://kaa.to",
-  "streamAsyncJS": false,
-  "script": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo_working_test.js"
+  "searchBaseUrl": "https://kaa.to/api/search",
+  "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo_working_test.js",
+  "asyncJS": false,
+  "streamAsyncJS": false
 }
