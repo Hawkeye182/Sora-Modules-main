@@ -325,21 +325,14 @@ async function extractDirectM3U8Streams(videoId) {
 }
 
 // Required soraFetch function for Sora compatibility
-async function soraFetch(url, options = {}) {
+async function soraFetch(url, options = { headers: {}, method: 'GET', body: null }) {
     try {
-        // Try fetchv2 first (Sora's preferred method)
-        if (typeof fetchv2 !== 'undefined') {
-            return await fetchv2(url, options.headers ?? {}, options.method ?? 'GET', options.body ?? null);
-        }
-        
-        // Fallback to standard fetch
-        if (typeof fetch !== 'undefined') {
+        return await fetchv2(url, options.headers ?? {}, options.method ?? 'GET', options.body ?? null);
+    } catch(e) {
+        try {
             return await fetch(url, options);
+        } catch(error) {
+            return null;
         }
-        
-        throw new Error('No fetch method available');
-    } catch(error) {
-        console.log(`soraFetch error: ${error.message}`);
-        return null;
     }
 }

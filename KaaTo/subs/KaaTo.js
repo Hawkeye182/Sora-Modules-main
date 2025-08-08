@@ -1,69 +1,278 @@
-// KaaTo Module - Enhanced Final Version with M3U8 Direct Stream Extraction
-// Based on kaa.to API and user's network analysis data
+// KaaTo Module for Sora - Fixed Version
+// Addresses search, image, details, and streaming issues
 
-// Function to extract video ID from iframe URL
-function extractVideoId(iframeUrl) {
-    const match = iframeUrl.match(/id=([^&]+)/);
-    return match ? match[1] : null;
+/**
+ * Searches the website for anime with the given keyword and returns the results
+ * @param {string} keyword The keyword to search for
+ * @returns {Promise<string>} A promise that resolves with a JSON string containing the search results
+ */
+async function searchResults(keyword) {
+    try {
+        console.log(`Searching for: ${keyword}`);
+        
+        const response = await soraFetch('https://kaa.to/api/search', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36',
+                'Origin': 'https://kaa.to',
+                'Referer': 'https://kaa.to/'
+            },
+            body: JSON.stringify({ query: keyword })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Search failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log(`API returned ${Array.isArray(data) ? data.length : 0} results`);
+        
+        // Verificar que la respuesta tiene datos
+        if (!Array.isArray(data) || data.length === 0) {
+            console.log('No results from API');
+            return JSON.stringify([]);
+        }
+        
+        const results = data.map(item => {
+            // Construir URL de imagen usando el poster real
+            let imageUrl = "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg";
+            if (item.poster && item.poster.hq) {
+                imageUrl = `https://kaa.to/image/${item.poster.hq}.webp`;
+            } else if (item.poster && item.poster.sm) {
+                imageUrl = `https://kaa.to/image/${item.poster.sm}.webp`;
+            }
+            
+            return {
+                title: item.title || item.title_en || "Sin título",
+                image: imageUrl,
+                href: `https://kaa.to/${item.slug}`
+            };
+        });
+
+        console.log(`Returning ${results.length} formatted results`);
+        return JSON.stringify(results);
+
+    } catch (error) {
+        console.log(`Search failed: ${error.message}`);
+        return JSON.stringify([]);
+    }
 }
 
-// Function to parse M3U8 master playlist and extract stream URLs
-function parseM3U8Master(masterPlaylist, videoId) {
-    const lines = masterPlaylist.split('\n');
-    const streams = {
-        video: [],
-        audio: []
-    };
-    
-    let currentStream = null;
-    
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
+/**
+ * Extracts the details from the given URL
+ * @param {string} url The URL to extract details from
+ * @returns {Promise<string>} A promise that resolves with JSON containing details
+ */
+async function extractDetails(url) {
+    try {
+        // Extract slug from URL: https://kaa.to/naruto-f3cf -> naruto-f3cf
+        const slug = url.split('/').pop();
+        console.log(`Extracting details for: ${slug}`);
         
-        if (line.startsWith('#EXT-X-STREAM-INF:')) {
-            // Extract stream info: #EXT-X-STREAM-INF:BANDWIDTH=2176000,RESOLUTION=1920x1080,CODECS="avc1.640028,mp4a.40.2"
-            currentStream = {
-                bandwidth: 0,
-                resolution: '',
-                codecs: '',
-                url: ''
-            };
-            
-            const bandwidthMatch = line.match(/BANDWIDTH=(\d+)/);
-            if (bandwidthMatch) currentStream.bandwidth = parseInt(bandwidthMatch[1]);
-            
-            const resolutionMatch = line.match(/RESOLUTION=(\d+x\d+)/);
-            if (resolutionMatch) currentStream.resolution = resolutionMatch[1];
-            
-            const codecsMatch = line.match(/CODECS="([^"]+)"/);
-            if (codecsMatch) currentStream.codecs = codecsMatch[1];
+        const response = await soraFetch(`https://kaa.to/api/show/${slug}`, {
+            headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Referer': 'https://kaa.to/'
+            }
+        });
 
-        } else if (line && !line.startsWith('#') && currentStream) {
-            // Video stream URL: 64cd84b244c6d04c12230479/playlist.m3u8
-            currentStream.url = `https://hls.krussdomi.com/manifest/${videoId}/${line}`;
-            
-            // Determine quality based on resolution
-            let quality = 'unknown';
-            if (currentStream.resolution === '1920x1080') quality = '1080p';
-            else if (currentStream.resolution === '1280x720') quality = '720p';
-            else if (currentStream.resolution === '640x360') quality = '360p';
-            
-            currentStream.quality = quality;
-            streams.video.push(currentStream);
-            currentStream = null;
+        if (!response.ok) {
+            throw new Error(`Details failed: ${response.status}`);
         }
+
+        const data = await response.json();
+        
+        if (!data) {
+            throw new Error('No details data received');
+        }
+
+        // Format the response according to what we found in the API
+        const details = {
+            description: data.overview || data.description || "No description available",
+            aliases: buildAliasString(data),
+            airdate: formatAirDate(data)
+        };
+
+        console.log(`Details extracted successfully`);
+        return JSON.stringify([details]);
+
+    } catch (error) {
+        console.log(`Details extraction failed: ${error.message}`);
+        return JSON.stringify([{
+            description: 'Error loading description',
+            aliases: 'Unable to load aliases',
+            airdate: 'Air date unknown'
+        }]);
     }
 
-    // Sort by quality (bandwidth descending)
-    streams.video.sort((a, b) => b.bandwidth - a.bandwidth);
+    function buildAliasString(data) {
+        let aliases = [];
+        if (data.title) aliases.push(data.title);
+        if (data.title_en && data.title_en !== data.title) aliases.push(data.title_en);
+        if (data.title_jp) aliases.push(data.title_jp);
+        return aliases.join(', ') || 'No aliases available';
+    }
 
-    return streams;
+    function formatAirDate(data) {
+        if (data.start_date) {
+            const startYear = new Date(data.start_date).getFullYear();
+            if (data.end_date) {
+                const endYear = new Date(data.end_date).getFullYear();
+                return `${startYear} - ${endYear}`;
+            }
+            return `${startYear} - Ongoing`;
+        }
+        if (data.year) {
+            return `${data.year}`;
+        }
+        return 'Unknown';
+    }
 }
 
-// Function to extract direct M3U8 streams from kaa.to
+/**
+ * Extracts episodes from the given URL
+ * @param {string} url The URL to extract episodes from
+ * @returns {Promise<string>} A promise that resolves with JSON containing episodes
+ */
+async function extractEpisodes(url) {
+    try {
+        // Extract slug from URL
+        const slug = url.split('/').pop();
+        console.log(`Extracting episodes for: ${slug}`);
+        
+        const response = await soraFetch(`https://kaa.to/api/show/${slug}/episodes`, {
+            headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Referer': 'https://kaa.to/'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Episodes failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (!Array.isArray(data) || data.length === 0) {
+            throw new Error('No episodes data received');
+        }
+
+        const episodes = data.map(episode => ({
+            href: `https://kaa.to/${slug}/episode/${episode.slug}`,
+            number: episode.number || episode.episode_number || 1
+        }));
+
+        console.log(`Found ${episodes.length} episodes`);
+        return JSON.stringify(episodes);
+
+    } catch (error) {
+        console.log(`Episodes extraction failed: ${error.message}`);
+        // Return basic episode structure as fallback
+        const fallbackEpisodes = [];
+        for (let i = 1; i <= 12; i++) {
+            fallbackEpisodes.push({
+                href: `${url}/episode/${i}`,
+                number: i
+            });
+        }
+        return JSON.stringify(fallbackEpisodes);
+    }
+}
+
+/**
+ * Extracts the stream URL from the given episode URL
+ * @param {string} url The episode URL to extract stream from
+ * @returns {Promise<string>} A promise that resolves with JSON containing stream info
+ */
+async function extractStreamUrl(url) {
+    try {
+        console.log(`Extracting stream from: ${url}`);
+        
+        // Parse URL to get show slug and episode slug
+        // URL format: https://kaa.to/show-slug/episode/episode-slug
+        const urlParts = url.split('/');
+        const showSlug = urlParts[3]; // show slug
+        const episodeSlug = urlParts[5]; // episode slug
+        
+        // Get episode details first
+        const episodeResponse = await soraFetch(`https://kaa.to/api/show/${showSlug}/episode/${episodeSlug}`, {
+            headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Referer': 'https://kaa.to/'
+            }
+        });
+
+        if (!episodeResponse.ok) {
+            throw new Error(`Episode data failed: ${episodeResponse.status}`);
+        }
+
+        const episodeData = await episodeResponse.json();
+        console.log(`Episode data received`);
+
+        // Try to find video sources
+        if (episodeData.videos && episodeData.videos.length > 0) {
+            // Look for the best quality video
+            const video = episodeData.videos.find(v => v.quality === '1080p') || 
+                         episodeData.videos.find(v => v.quality === '720p') || 
+                         episodeData.videos[0];
+            
+            if (video && video.src) {
+                console.log(`Direct video source found: ${video.quality || 'unknown quality'}`);
+                return JSON.stringify({ 
+                    stream: video.src, 
+                    subtitles: null 
+                });
+            }
+        }
+
+        // Try to extract from iframe if direct sources not available
+        if (episodeData.iframe_url || episodeData.embed_url) {
+            const iframeUrl = episodeData.iframe_url || episodeData.embed_url;
+            console.log(`Trying iframe extraction from: ${iframeUrl}`);
+            
+            // Extract video ID from iframe URL
+            const videoId = extractVideoId(iframeUrl);
+            if (videoId) {
+                const m3u8Url = await extractDirectM3U8Streams(videoId);
+                if (m3u8Url) {
+                    console.log(`M3U8 stream extracted successfully`);
+                    return JSON.stringify({ 
+                        stream: m3u8Url, 
+                        subtitles: null 
+                    });
+                }
+            }
+        }
+
+        throw new Error('No stream sources found');
+
+    } catch (error) {
+        console.log(`Stream extraction failed: ${error.message}`);
+        return JSON.stringify({ 
+            stream: null, 
+            subtitles: null 
+        });
+    }
+}
+
+// Helper function to extract video ID from iframe URL
+function extractVideoId(iframeUrl) {
+    try {
+        const match = iframeUrl.match(/id=([^&]+)/);
+        return match ? match[1] : null;
+    } catch (error) {
+        return null;
+    }
+}
+
+// Function to extract M3U8 streams using the network data provided
 async function extractDirectM3U8Streams(videoId) {
     try {
-        // Direct M3U8 master playlist URL based on user's network analysis
         const masterUrl = `https://hls.krussdomi.com/manifest/${videoId}/master.m3u8`;
         
         const headers = {
@@ -74,409 +283,63 @@ async function extractDirectM3U8Streams(videoId) {
             'Sec-Fetch-Dest': 'empty',
             'Sec-Fetch-Mode': 'cors',
             'Sec-Fetch-Site': 'same-site',
-            'Sec-Gpc': '1',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         };
 
         const response = await soraFetch(masterUrl, { headers });
         
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            throw new Error(`M3U8 request failed: ${response.status}`);
         }
 
         const masterPlaylist = await response.text();
         
-        // Parse M3U8 master playlist
-        const streams = parseM3U8Master(masterPlaylist, videoId);
+        // Parse M3U8 to find the best quality stream
+        const lines = masterPlaylist.split('\n');
+        let bestStream = null;
+        let bestBandwidth = 0;
         
-        if (streams.video.length > 0) {
-            // Return the highest quality video stream URL
-            return streams.video[0].url;
-        } else {
-            // Fallback to master URL if individual streams not found
-            return masterUrl;
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            
+            if (line.startsWith('#EXT-X-STREAM-INF:')) {
+                const bandwidthMatch = line.match(/BANDWIDTH=(\d+)/);
+                const bandwidth = bandwidthMatch ? parseInt(bandwidthMatch[1]) : 0;
+                
+                if (bandwidth > bestBandwidth && i + 1 < lines.length) {
+                    const streamLine = lines[i + 1].trim();
+                    if (streamLine && !streamLine.startsWith('#')) {
+                        bestBandwidth = bandwidth;
+                        bestStream = `https://hls.krussdomi.com/manifest/${videoId}/${streamLine}`;
+                    }
+                }
+            }
         }
         
-    } catch (error) {
-        console.log(`M3U8 extraction failed for ${videoId}: ${error.message}`);
-        return null;
-    }
-}
-
-/**
- * Searches the website for anime with the given keyword and returns the results
- * @param {string} keyword The keyword to search for
- * @returns {Promise<string>} A promise that resolves with a JSON string containing the search results in the format: `[{"title": "Title", "image": "Image URL", "href": "URL"}, ...]`
- */
-async function searchResults(keyword) {
-    const match = iframeUrl.match(/id=([^&]+)/);
-    return match ? match[1] : null;
-}
-
-// Function to extract direct M3U8 streams based on user's network data
-async function extractDirectM3U8Streams(videoId) {
-    try {
-        const masterUrl = `https://hls.krussdomi.com/manifest/${videoId}/master.m3u8`;
+        return bestStream || masterUrl;
         
-        // Headers based on user's exact network data
-        const headers = {
-            'Accept': '*/*',
-            'Accept-Language': 'es-419,es;q=0.9',
-            'Origin': 'https://krussdomi.com',
-            'Referer': 'https://krussdomi.com/',
-            'Sec-Ch-Ua': '"Not;A=Brand";v="99", "Brave";v="139", "Chromium";v="139"',
-            'Sec-Ch-Ua-Mobile': '?0',
-            'Sec-Ch-Ua-Platform': '"Windows"',
-            'Sec-Fetch-Dest': 'empty',
-            'Sec-Fetch-Mode': 'cors',
-            'Sec-Fetch-Site': 'same-site',
-            'Sec-Gpc': '1',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36'
-        };
-
-        const response = await soraFetch(masterUrl, { headers });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const masterPlaylist = await response.text();
-        
-        // Parse M3U8 master playlist
-        const streams = parseM3U8Master(masterPlaylist, videoId);
-        
-        if (streams.video.length > 0) {
-            // Return the highest quality video stream URL
-            return streams.video[0].url;
-        } else {
-            // Fallback to master URL if individual streams not found
-            return masterUrl;
-        }
-
     } catch (error) {
         console.log(`M3U8 extraction failed: ${error.message}`);
         return null;
     }
 }
 
-// Function to parse M3U8 master playlist based on user's data format
-function parseM3U8Master(content, videoId) {
-    const lines = content.split('\n');
-    const streams = {
-        video: [],
-        audio: []
-    };
-
-    let currentStream = null;
-
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
-
-        if (line.startsWith('#EXT-X-MEDIA:TYPE=AUDIO')) {
-            // Audio track format: #EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="stereo",NAME="Japanese",DEFAULT=YES,LANGUAGE="jpn",CHANNELS="2",URI="64cd8436684efea82b13f4a5/playlist.m3u8"
-            const nameMatch = line.match(/NAME="([^"]+)"/);
-            const languageMatch = line.match(/LANGUAGE="([^"]+)"/);
-            const uriMatch = line.match(/URI="([^"]+)"/);
-
-            if (uriMatch) {
-                streams.audio.push({
-                    type: 'audio',
-                    name: nameMatch ? nameMatch[1] : 'Unknown',
-                    language: languageMatch ? languageMatch[1] : 'unknown',
-                    url: `https://hls.krussdomi.com/manifest/${videoId}/${uriMatch[1]}`
-                });
-            }
-
-        } else if (line.startsWith('#EXT-X-STREAM-INF:')) {
-            // Video stream info: #EXT-X-STREAM-INF:BANDWIDTH=6631028,AVERAGE-BANDWIDTH=2338000,CODECS="avc1.64002A,mp4a.40.2",RESOLUTION=1920x1080,FRAME-RATE=23.976,AUDIO="stereo"
-            const bandwidthMatch = line.match(/BANDWIDTH=(\d+)/);
-            const resolutionMatch = line.match(/RESOLUTION=(\d+x\d+)/);
-            const framerateMatch = line.match(/FRAME-RATE=([\d.]+)/);
-
-            currentStream = {
-                type: 'video',
-                bandwidth: bandwidthMatch ? parseInt(bandwidthMatch[1]) : 0,
-                resolution: resolutionMatch ? resolutionMatch[1] : 'unknown',
-                framerate: framerateMatch ? parseFloat(framerateMatch[1]) : 0
-            };
-
-        } else if (line && !line.startsWith('#') && currentStream) {
-            // Video stream URL: 64cd84b244c6d04c12230479/playlist.m3u8
-            currentStream.url = `https://hls.krussdomi.com/manifest/${videoId}/${line}`;
-            
-            // Determine quality based on resolution
-            let quality = 'unknown';
-            if (currentStream.resolution === '1920x1080') quality = '1080p';
-            else if (currentStream.resolution === '1280x720') quality = '720p';
-            else if (currentStream.resolution === '640x360') quality = '360p';
-            
-            currentStream.quality = quality;
-            streams.video.push(currentStream);
-            currentStream = null;
-        }
-    }
-
-    // Sort by quality (bandwidth descending)
-    streams.video.sort((a, b) => b.bandwidth - a.bandwidth);
-
-    return streams;
-}
-
-async function searchResults(query) {
+// Required soraFetch function for Sora compatibility
+async function soraFetch(url, options = {}) {
     try {
-        const response = await soraFetch('https://kaa.to/api/search', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36',
-                'Origin': 'https://kaa.to',
-                'Referer': 'https://kaa.to/'
-            },
-            body: JSON.stringify({ query: query })
-        });
-
-        if (!response.ok) {
-            throw new Error(`Search failed: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        // Verificar que la respuesta tiene datos
-        if (!Array.isArray(data) || data.length === 0) {
-            throw new Error('No results found in API response');
+        // Try fetchv2 first (Sora's preferred method)
+        if (typeof fetchv2 !== 'undefined') {
+            return await fetchv2(url, options.headers ?? {}, options.method ?? 'GET', options.body ?? null);
         }
         
-        const results = data.map(item => {
-            // Construir URL de imagen usando el poster
-            let imageUrl = "https://raw.githubusercontent.com/ShadeOfChaos/Sora-Modules/refs/heads/main/ofchaos.jpg";
-            if (item.poster && item.poster.hq) {
-                imageUrl = `https://kaa.to/image/${item.poster.hq}.webp`;
-            }
-            
-            return {
-                title: item.title || item.title_en || "Sin título",
-                image: imageUrl,
-                href: `https://kaa.to/${item.slug}`
-            };
-        });
-
-        return JSON.stringify(results);
-
-    } catch (error) {
-        console.log(`API search failed, using static fallback for: ${query}`);
-        
-        // Enhanced fallback data with multiple anime
-        const fallbackResults = {
-            "bleach": [{
-                title: "Bleach",
-                image: "https://raw.githubusercontent.com/ShadeOfChaos/Sora-Modules/refs/heads/main/ofchaos.jpg",
-                href: "https://kaa.to/bleach-f24c"
-            }],
-            "dandadan": [{
-                title: "Dandadan",
-                image: "https://raw.githubusercontent.com/ShadeOfChaos/Sora-Modules/refs/heads/main/ofchaos.jpg",
-                href: "https://kaa.to/dandadan-a1b2c3"
-            }],
-            "dragon ball": [{
-                title: "Dragon Ball",
-                image: "https://raw.githubusercontent.com/ShadeOfChaos/Sora-Modules/refs/heads/main/ofchaos.jpg",
-                href: "https://kaa.to/dragon-ball-d4e5f6"
-            }],
-            "naruto": [{
-                title: "Naruto",
-                image: "https://raw.githubusercontent.com/ShadeOfChaos/Sora-Modules/refs/heads/main/ofchaos.jpg",
-                href: "https://kaa.to/naruto-g7h8i9"
-            }],
-            "sword art online": [{
-                title: "Sword Art Online",
-                image: "https://raw.githubusercontent.com/ShadeOfChaos/Sora-Modules/refs/heads/main/ofchaos.jpg",
-                href: "https://kaa.to/sword-art-online-j1k2l3"
-            }]
-        };
-
-        const normalizedQuery = query.toLowerCase();
-        const result = fallbackResults[normalizedQuery] || [];
-        return JSON.stringify(result);
-    }
-}
-
-async function extractDetails(url) {
-    try {
-        const slug = url.split('/').pop();
-        const response = await soraFetch(`https://kaa.to/api/show/${slug}`, {
-            headers: {
-                'Accept': 'application/json',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36',
-                'Referer': 'https://kaa.to/'
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error(`Details extraction failed: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        const details = [{
-            description: data.description || "No description available",
-            aliases: data.genres ? data.genres.join(', ') : "Action, Adventure, Fantasy, Shounen",
-            airdate: data.year ? `Aired: ${data.year}` : "Aired: 2004"
-        }];
-
-        return JSON.stringify(details);
-
-    } catch (error) {
-        console.log(`API details failed, using static fallback`);
-        
-        const fallbackDetails = [{
-            description: "Ichigo Kurosaki is an ordinary high schooler—until his family is attacked by a Hollow, a corrupt spirit that seeks to devour human souls. It is then that he meets a Soul Reaper named Rukia Kuchiki, who gets injured while protecting Ichigo's family from the assailant. To save his family, Ichigo accepts Rukia's offer of taking her powers and becomes a Soul Reaper as a result.\n\nHowever, as Rukia is unable to regain her powers, Ichigo is given the daunting task of hunting down the Hollows that plague their town. However, he is not alone in his fight, as he is later joined by his friends—classmates Orihime Inoue, Yasutora Sado, and Uryuu Ishida—who each have their own unique abilities. As Ichigo and his comrades get used to their new duties and support each other on and off the battlefield, the young Soul Reaper soon learns that the Hollows are not the only real threat to the human world.",
-            aliases: "Action, Adventure, Fantasy, Shounen",
-            airdate: "Aired: 2004"
-        }];
-
-        return JSON.stringify(fallbackDetails);
-    }
-}
-
-async function extractEpisodes(url) {
-    try {
-        const slug = url.split('/').pop();
-        const response = await soraFetch(`https://kaa.to/api/show/${slug}/episodes`, {
-            headers: {
-                'Accept': 'application/json',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36',
-                'Referer': 'https://kaa.to/'
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error(`Episodes extraction failed: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        const episodes = data.map(episode => ({
-            href: `https://kaa.to/${slug}/ep-${episode.number}-${episode.slug}`,
-            number: episode.number
-        }));
-
-        return JSON.stringify(episodes);
-
-    } catch (error) {
-        console.log(`API episodes failed, using static fallback`);
-        
-        // Generate 100 episodes as fallback
-        const fallbackEpisodes = Array.from({length: 100}, (_, i) => ({
-            href: `https://kaa.to/bleach-f24c/ep-${i+1}-${Math.random().toString(36).substr(2, 6)}`,
-            number: i+1
-        }));
-
-        return JSON.stringify(fallbackEpisodes);
-    }
-}
-
-async function extractStreamUrl(url) {
-    try {
-        const slug = url.split('/').pop();
-        const response = await soraFetch(`https://kaa.to/api/show/${slug.split('/')[0]}/episode/${slug}`, {
-            headers: {
-                'Accept': 'application/json',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36',
-                'Referer': 'https://kaa.to/'
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error(`Stream extraction failed: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        if (data.servers && data.servers.length > 0) {
-            const vidStreamingServer = data.servers.find(server => 
-                server.name && server.name.toLowerCase().includes('vidstreaming')
-            );
-            
-            if (vidStreamingServer) {
-                console.log(`Found server: ${vidStreamingServer.name} URL: ${vidStreamingServer.url}`);
-                
-                // ENHANCED: Try to extract direct M3U8 streams
-                const videoId = extractVideoId(vidStreamingServer.url);
-                if (videoId) {
-                    console.log(`Extracting M3U8 streams for video ID: ${videoId}`);
-                    const directM3U8 = await extractDirectM3U8Streams(videoId);
-                    
-                    if (directM3U8) {
-                        console.log(`✅ Direct M3U8 extraction successful: ${directM3U8}`);
-                        return directM3U8;
-                    } else {
-                        console.log(`❌ M3U8 extraction failed, using iframe fallback`);
-                    }
-                }
-                
-                return vidStreamingServer.url;
-            }
-        }
-
-        console.log('No VidStreaming server found, using static fallback');
-        return "https://krussdomi.com/vidstreaming/player.php?id=64cd832e44c6d04c12186497&ln=en-US";
-
-    } catch (error) {
-        console.log(`API stream extraction failed: ${error.message}`);
-        console.log('Returning server src as fallback: https://krussdomi.com/vidstreaming/player.php?id=64cd832e44c6d04c12186497&ln=en-US');
-        return "https://krussdomi.com/vidstreaming/player.php?id=64cd832e44c6d04c12186497&ln=en-US";
-    }
-}
-
-async function areRequiredServersUp() {
-    const requiredHosts = ['https://kaa.to', 'https://hls.krussdomi.com'];
-
-    try {
-        let promises = [];
-
-        for(let host of requiredHosts) {
-            promises.push(
-                new Promise(async (resolve) => {
-                    try {
-                        let response = await soraFetch(host, { method: 'HEAD' });
-                        response.host = host;
-                        return resolve(response);
-                    } catch (error) {
-                        return resolve({ ok: false, host: host, error: error.message });
-                    }
-                })
-            );
-        }
-
-        return Promise.allSettled(promises).then((responses) => {
-            let success = 0;
-            let total = responses.length;
-
-            for(let response of responses) {
-                if(response.status === 'fulfilled' && response.value.ok) {
-                    success++;
-                }
-            }
-
-            let threshold = Math.ceil(total * 0.5);
-            return success >= threshold;
-        });
-
-    } catch (error) {
-        console.log(`Server status check failed: ${error.message}`);
-        return true; // Assume servers are up if check fails
-    }
-}
-
-async function soraFetch(url, options = { headers: {}, method: 'GET', body: null }) {
-    try {
-        return await fetchv2(url, options.headers ?? {}, options.method ?? 'GET', options.body ?? null);
-    } catch(e) {
-        try {
+        // Fallback to standard fetch
+        if (typeof fetch !== 'undefined') {
             return await fetch(url, options);
-        } catch(error) {
-            return null;
         }
+        
+        throw new Error('No fetch method available');
+    } catch(error) {
+        console.log(`soraFetch error: ${error.message}`);
+        return null;
     }
 }
