@@ -1,0 +1,14 @@
+{
+  "name": "KaaTo Sync Test",
+  "author": {
+    "name": "KaaTo Team",
+    "icon": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/logo.png",
+    "url": "https://github.com/Hawkeye182/Sora-Modules-main"
+  },
+  "description": "Módulo de prueba síncrono con datos estáticos",
+  "type": "anime",
+  "searchBaseUrl": "https://kaa.to",
+  "streamAsyncJS": false,
+  "streamType": "HLS",
+  "script": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo_sync_test.js"
+}
