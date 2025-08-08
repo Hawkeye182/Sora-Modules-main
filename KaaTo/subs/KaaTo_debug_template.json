@@ -1,0 +1,21 @@
+{
+    "sourceName": "Debug Template Format",
+    "iconUrl": "https://via.placeholder.com/100x100/purple/white?text=TEMPLATE",
+    "author": {
+        "name": "Debug Template",
+        "icon": "https://via.placeholder.com/50x50/orange/white?text=T",
+        "url": "https://github.com/debug"
+    },
+    "version": "1.0.0",
+    "language": "subs",
+    "streamType": "HLS",
+    "quality": "1080p",
+    "type": "anime",
+    "downloadSupport": false,
+    "baseUrl": "https://debug.example.com/",
+    "searchBaseUrl": "https://debug.example.com/search",
+    "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo_debug_template.js",
+    "asyncJS": true,
+    "streamAsyncJS": true,
+    "softsub": true
+}
