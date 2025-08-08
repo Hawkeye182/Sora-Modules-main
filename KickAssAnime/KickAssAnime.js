@@ -3,48 +3,119 @@ const BASE_URL = "https://kaa.to/";
 
 /**
  * Busca anime en el sitio web con la palabra clave dada y devuelve los resultados
- * Optimizado para hacer UNA SOLA petición como los otros módulos exitosos
+ * Implementa doble estrategia: buscador oficial + búsqueda alfabética
  * @param {string} keyword La palabra clave a buscar
  * @returns {Promise<string>} Una promesa que se resuelve con una cadena JSON conteniendo los resultados de búsqueda en el formato: `[{"title": "Título", "image": "URL de imagen", "href": "URL"}, ...]`
  */
 async function searchResults(keyword) {
     try {
         const keywordLower = keyword.toLowerCase().trim();
-        
-        // Determinar la página alfabética más probable basada en la primera letra
-        const firstLetter = keywordLower.charAt(0).toUpperCase();
-        let searchUrl = 'https://kaa.to/anime'; // URL por defecto
-        
-        // Si es una letra válida, buscar en esa página alfabética específica
-        if (/[A-Z]/.test(firstLetter)) {
-            searchUrl = `https://kaa.to/anime?alphabet=${firstLetter}`;
-        }
+        let results = [];
 
-        // Hacer UNA SOLA petición (como AnimeHeaven y otros módulos)
-        const response = await soraFetch(searchUrl);
-        const html = typeof response === 'object' ? await response.text() : await response;
-
-        // Regex simplificado y directo (como en AnimeHeaven)
-        const ANIME_REGEX = /\[(\d{4})\]\((https:\/\/kaa\.to\/([^)]+))\)[\s\S]*?##\s*([^\n]+)/g;
-        
-        const matches = html.matchAll(ANIME_REGEX);
-        const matchesArray = Array.from(matches);
-        
-        const results = matchesArray
-            .filter(match => {
-                const title = match[4]?.toLowerCase() || '';
-                return title.includes(keywordLower);
-            })
-            .map(match => {
-                return {
+        // Método 1: Intentar el buscador oficial de kaa.to
+        try {
+            const searchUrl = `https://kaa.to/search?q=${encodeURIComponent(keyword)}`;
+            const searchResponse = await soraFetch(searchUrl);
+            const searchHtml = typeof searchResponse === 'object' ? await searchResponse.text() : await searchResponse;
+            
+            // Si el buscador oficial funciona, extraer resultados
+            if (!searchHtml.includes('No Match')) {
+                const officialRegex = /\[(\d{4})\]\((https:\/\/kaa\.to\/([^)]+))\)[\s\S]*?##\s*([^\n]+)/g;
+                const officialMatches = searchHtml.matchAll(officialRegex);
+                const officialMatchesArray = Array.from(officialMatches);
+                
+                results = officialMatchesArray.map(match => ({
                     title: match[4].trim(),
                     image: BASE_URL + "favicon.ico",
                     href: match[2]
-                };
-            })
-            .slice(0, 10); // Limitar a 10 resultados
+                }));
+                
+                if (results.length > 0) {
+                    console.log(`✅ Buscador oficial encontró ${results.length} resultados`);
+                    return JSON.stringify(results.slice(0, 10));
+                }
+            }
+        } catch (officialError) {
+            console.log('Buscador oficial falló, usando método alfabético...');
+        }
 
-        return JSON.stringify(results);
+        // Método 2: Búsqueda alfabética mejorada (fallback)
+        const firstLetter = keywordLower.charAt(0).toUpperCase();
+        const searchPages = [];
+        
+        // Búsqueda inteligente por letra inicial
+        if (/[A-Z]/.test(firstLetter)) {
+            searchPages.push(`https://kaa.to/anime?alphabet=${firstLetter}`);
+        }
+        
+        // Para búsquedas populares, también buscar en páginas relacionadas
+        const popularSearches = {
+            'naruto': ['N'],
+            'dragon': ['D'],
+            'one': ['O'],
+            'attack': ['A'],
+            'demon': ['D'],
+            'tokyo': ['T'],
+            'fate': ['F'],
+            'jujutsu': ['J'],
+            'my': ['M']
+        };
+        
+        for (const [searchTerm, letters] of Object.entries(popularSearches)) {
+            if (keywordLower.includes(searchTerm)) {
+                for (const letter of letters) {
+                    const pageUrl = `https://kaa.to/anime?alphabet=${letter}`;
+                    if (!searchPages.includes(pageUrl)) {
+                        searchPages.push(pageUrl);
+                    }
+                }
+                break;
+            }
+        }
+        
+        // Si no hay páginas específicas, usar página general
+        if (searchPages.length === 0) {
+            searchPages.push('https://kaa.to/anime');
+        }
+
+        // Buscar en las páginas seleccionadas
+        for (const searchUrl of searchPages) {
+            try {
+                const response = await soraFetch(searchUrl);
+                const html = typeof response === 'object' ? await response.text() : await response;
+
+                const ANIME_REGEX = /\[(\d{4})\]\((https:\/\/kaa\.to\/([^)]+))\)[\s\S]*?##\s*([^\n]+)/g;
+                const matches = html.matchAll(ANIME_REGEX);
+                const matchesArray = Array.from(matches);
+                
+                const pageResults = matchesArray
+                    .filter(match => {
+                        const title = match[4]?.toLowerCase() || '';
+                        return title.includes(keywordLower);
+                    })
+                    .map(match => ({
+                        title: match[4].trim(),
+                        image: BASE_URL + "favicon.ico",
+                        href: match[2]
+                    }));
+
+                results.push(...pageResults);
+                
+                // Si encontramos suficientes resultados, no seguir buscando
+                if (results.length >= 10) break;
+                
+            } catch (pageError) {
+                console.log(`Error en página ${searchUrl}: ${pageError.message}`);
+                continue;
+            }
+        }
+
+        // Eliminar duplicados y limitar resultados
+        const uniqueResults = results.filter((result, index, self) => 
+            index === self.findIndex(r => r.href === result.href)
+        );
+
+        return JSON.stringify(uniqueResults.slice(0, 10));
 
     } catch (error) {
         console.log('Error de búsqueda: ' + error.message);
