@@ -1,31 +1,21 @@
 {
-    "id": "KaaTo_COMPLETE",
-    "title": "KaaTo Complete",
-    "description": "Módulo completo para extraer animes de kaa.to con soporte M3U8",
-    "language": [
-        "eng",
-        "jpn"
-    ],
-    "url": "https://kaa.to",
-    "streamType": "hls",
-    "needsProxy": false,
-    "baseURL": "https://kaa.to",
-    "version": "3.0",
-    "logo": "https://kaa.to/favicon.ico",
-    "searchApi": "https://kaa.to/api/search",
-    "detailsApi": "https://kaa.to/api/show/{slug}",
-    "episodesApi": "https://kaa.to/api/show/{slug}/episodes",
-    "streamingProvider": "krussdomi.com",
-    "supportedQualities": [
-        "1080p",
-        "720p",
-        "480p"
-    ],
-    "audioTracks": [
-        "English",
-        "Japanese"
-    ],
+    "sourceName": "KaaTo Complete M3U8",
+    "iconUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/logo.png",
+    "author": {
+        "name": "Hawkeye182",
+        "icon": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
+        "url": "https://github.com/Hawkeye182/Sora-Modules-main"
+    },
+    "version": "3.0.0",
+    "language": "subs",
+    "streamType": "HLS",
+    "quality": "1080p",
     "type": "anime",
-    "category": "streaming",
-    "priority": 1
+    "downloadSupport": true,
+    "baseUrl": "https://kaa.to/",
+    "searchBaseUrl": "https://kaa.to/api/search",
+    "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo_COMPLETE.js?v=3.0.0",
+    "asyncJS": true,
+    "streamAsyncJS": true,
+    "softsub": true
 }
