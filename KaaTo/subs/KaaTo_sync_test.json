@@ -1,14 +1,18 @@
 {
-  "name": "KaaTo Sync Test",
+  "sourceName": "KaaTo Sync Test",
+  "iconUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
   "author": {
-    "name": "KaaTo Team",
-    "icon": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/logo.png",
+    "name": "Hawkeye182",
+    "icon": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
     "url": "https://github.com/Hawkeye182/Sora-Modules-main"
   },
-  "description": "Módulo de prueba síncrono con datos estáticos",
+  "version": "1.0.0",
+  "language": "subs",
+  "streamType": "HLS",
+  "quality": "1080p",
   "type": "anime",
+  "baseUrl": "https://kaa.to",
   "searchBaseUrl": "https://kaa.to",
   "streamAsyncJS": false,
-  "streamType": "HLS",
   "script": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo_sync_test.js"
 }
