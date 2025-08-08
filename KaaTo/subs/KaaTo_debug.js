@@ -10,7 +10,7 @@ async function searchResults(keyword) {
     try {
         // Debug 1: Show what we received
         debugResults.push({
-            title: `🔍 DEBUG: Buscando "${keyword}"`,
+            title: `DEBUG: Buscando "${keyword}"`,
             image: "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
             href: "debug://search-start"
         });
@@ -20,10 +20,19 @@ async function searchResults(keyword) {
         const hasFetch = typeof fetch !== 'undefined';
         
         debugResults.push({
-            title: `📡 fetchv2: ${hasFetchv2 ? '✅' : '❌'} | fetch: ${hasFetch ? '✅' : '❌'}`,
+            title: `fetchv2: ${hasFetchv2 ? 'SI' : 'NO'} | fetch: ${hasFetch ? 'SI' : 'NO'}`,
             image: "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
             href: "debug://fetch-methods"
         });
+        
+        if (!hasFetchv2 && !hasFetch) {
+            debugResults.push({
+                title: "ERROR: No hay metodos de fetch disponibles",
+                image: "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
+                href: "debug://no-fetch"
+            });
+            return JSON.stringify(debugResults);
+        }
         
         // Debug 3: Try the actual search
         let response;
@@ -32,14 +41,19 @@ async function searchResults(keyword) {
         try {
             if (hasFetchv2) {
                 fetchMethod = "fetchv2";
+                debugResults.push({
+                    title: "Intentando fetchv2...",
+                    image: "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
+                    href: "debug://trying-fetchv2"
+                });
+                
                 response = await fetchv2('https://kaa.to/api/search', {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    'Accept': 'application/json'
                 }, 'POST', JSON.stringify({ query: keyword }));
                 
                 debugResults.push({
-                    title: `🚀 fetchv2 ejecutado - tipo: ${typeof response}`,
+                    title: `fetchv2 ejecutado - tipo respuesta: ${typeof response}`,
                     image: "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
                     href: "debug://fetchv2-executed"
                 });
@@ -47,42 +61,63 @@ async function searchResults(keyword) {
                 // If fetchv2 returns data directly, wrap it
                 if (response && typeof response === 'object' && !response.ok && !response.status) {
                     debugResults.push({
-                        title: `📦 fetchv2 retornó datos directos (${Array.isArray(response) ? response.length : 'no-array'})`,
+                        title: `fetchv2 retorno datos directos (${Array.isArray(response) ? response.length + ' items' : 'no-array'})`,
                         image: "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
                         href: "debug://fetchv2-direct-data"
                     });
                     
-                    response = {
-                        ok: true,
-                        status: 200,
-                        json: async () => response,
-                        text: async () => JSON.stringify(response)
-                    };
+                    if (Array.isArray(response) && response.length > 0) {
+                        // Success case - show some real results
+                        const results = response.slice(0, 2).map((item, index) => {
+                            return {
+                                title: `REAL ${index + 1}: ${item.title || item.title_en || "Sin titulo"}`,
+                                image: `https://kaa.to/image/poster/${item.poster?.hq || item.poster?.sm || 'default'}.webp`,
+                                href: `https://kaa.to/${item.slug}`
+                            };
+                        });
+                        
+                        debugResults.push({
+                            title: `SUCCESS: Encontrados ${response.length} animes para "${keyword}"`,
+                            image: "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
+                            href: "debug://success"
+                        });
+                        
+                        return JSON.stringify([...debugResults, ...results]);
+                    } else {
+                        debugResults.push({
+                            title: "fetchv2 retorno array vacio",
+                            image: "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
+                            href: "debug://empty-array"
+                        });
+                        return JSON.stringify(debugResults);
+                    }
                 }
                 
             } else if (hasFetch) {
                 fetchMethod = "fetch";
+                debugResults.push({
+                    title: "Intentando fetch estandar...",
+                    image: "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
+                    href: "debug://trying-fetch"
+                });
+                
                 response = await fetch('https://kaa.to/api/search', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ query: keyword })
                 });
                 
                 debugResults.push({
-                    title: `🚀 fetch ejecutado - status: ${response?.status}`,
+                    title: `fetch ejecutado - status: ${response?.status}`,
                     image: "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
                     href: "debug://fetch-executed"
                 });
-            } else {
-                throw new Error("No fetch method available");
             }
         } catch (fetchError) {
             debugResults.push({
-                title: `❌ Error en ${fetchMethod}: ${fetchError.message}`,
+                title: `ERROR en ${fetchMethod}: ${fetchError.message}`,
                 image: "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
                 href: "debug://fetch-error"
             });
@@ -90,137 +125,21 @@ async function searchResults(keyword) {
             return JSON.stringify(debugResults);
         }
         
-        // Debug 4: Check response
-        if (!response) {
-            debugResults.push({
-                title: `⚠️ Response es null`,
-                image: "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
-                href: "debug://response-null"
-            });
-            return JSON.stringify(debugResults);
-        }
-        
-        debugResults.push({
-            title: `📋 Response OK: ${response.ok} | Status: ${response.status}`,
-            image: "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
-            href: "debug://response-status"
-        });
-        
-        if (!response.ok) {
-            debugResults.push({
-                title: `❌ HTTP Error: ${response.status}`,
-                image: "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
-                href: "debug://http-error"
-            });
-            return JSON.stringify(debugResults);
-        }
-        
-        // Debug 5: Try to get JSON data
-        let data;
-        try {
-            data = await response.json();
-            debugResults.push({
-                title: `📄 JSON obtenido - tipo: ${typeof data} | array: ${Array.isArray(data)}`,
-                image: "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
-                href: "debug://json-obtained"
-            });
-        } catch (jsonError) {
-            debugResults.push({
-                title: `❌ Error al parsear JSON: ${jsonError.message}`,
-                image: "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
-                href: "debug://json-error"
-            });
-            return JSON.stringify(debugResults);
-        }
-        
-        // Debug 6: Check data content
-        if (!Array.isArray(data)) {
-            debugResults.push({
-                title: `⚠️ Data no es array: ${typeof data}`,
-                image: "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
-                href: "debug://data-not-array"
-            });
-            return JSON.stringify(debugResults);
-        }
-        
-        debugResults.push({
-            title: `✅ Datos OK - ${data.length} resultados encontrados`,
-            image: "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
-            href: "debug://data-ok"
-        });
-        
-        if (data.length === 0) {
-            debugResults.push({
-                title: `⚠️ API retornó 0 resultados para "${keyword}"`,
-                image: "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
-                href: "debug://no-results"
-            });
-            return JSON.stringify(debugResults);
-        }
-        
-        // Debug 7: Show first result structure
-        const firstItem = data[0];
-        debugResults.push({
-            title: `🔬 Primer resultado: ${firstItem.title || firstItem.title_en || 'sin-titulo'}`,
-            image: "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
-            href: "debug://first-result"
-        });
-        
-        debugResults.push({
-            title: `🖼️ Poster: ${firstItem.poster ? (firstItem.poster.hq || firstItem.poster.sm || 'sin-poster') : 'no-poster-field'}`,
-            image: "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
-            href: "debug://poster-info"
-        });
-        
-        // Debug 8: Try to format results
-        try {
-            const results = data.slice(0, 3).map((item, index) => {
-                let imageUrl = "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg";
-                if (item.poster && item.poster.hq) {
-                    imageUrl = `https://kaa.to/image/poster/${item.poster.hq}.webp`;
-                } else if (item.poster && item.poster.sm) {
-                    imageUrl = `https://kaa.to/image/poster/${item.poster.sm}.webp`;
-                }
-                
-                return {
-                    title: `${index + 1}. ${item.title || item.title_en || "Sin título"}`,
-                    image: imageUrl,
-                    href: `https://kaa.to/${item.slug}`
-                };
-            });
-            
-            debugResults.push({
-                title: `✅ Formateados ${results.length} resultados exitosamente`,
-                image: "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
-                href: "debug://format-success"
-            });
-            
-            // Return debug info + actual results
-            return JSON.stringify([...debugResults, ...results]);
-            
-        } catch (formatError) {
-            debugResults.push({
-                title: `❌ Error al formatear: ${formatError.message}`,
-                image: "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
-                href: "debug://format-error"
-            });
-            return JSON.stringify(debugResults);
-        }
+        return JSON.stringify(debugResults);
         
     } catch (error) {
-        debugResults.push({
-            title: `💥 Error general: ${error.message}`,
+        return JSON.stringify([{
+            title: `ERROR GENERAL: ${error.message}`,
             image: "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
             href: "debug://general-error"
-        });
-        return JSON.stringify(debugResults);
+        }]);
     }
 }
 
-// Dummy functions for debugging
+// Required functions for Sora
 async function extractDetails(url) {
     return JSON.stringify({
-        title: "🔧 DEBUG MODE",
+        title: "DEBUG MODE",
         description: `URL recibida: ${url}`,
         release: "2024",
         status: "Debug activo",
@@ -232,7 +151,7 @@ async function extractEpisodes(url) {
     return JSON.stringify([
         {
             number: "1",
-            title: "🔧 DEBUG - Episode Test",
+            title: "DEBUG - Episode Test",
             href: `${url}/episode/debug-test`
         }
     ]);
