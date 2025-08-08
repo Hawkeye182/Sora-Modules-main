@@ -1,0 +1,17 @@
+{
+    "sourceName": "KaaTo - CORREGIDO",
+    "sources": [
+        {
+            "base_url": "https://kaa.to/",
+            "href": "https://raw.githubusercontent.com/YOURUSERNAME/YOURREPO/main/KaaTo/subs/KaaTo_CORRECTED.js"
+        }
+    ],
+    "language": "es",
+    "streamAsyncJS": true,
+    "asyncJS": true,
+    "timeout": 30,
+    "homepage": "https://kaa.to",
+    "logo": "https://kaa.to/favicon.ico",
+    "description": "Módulo corregido para extraer animes de kaa.to con información completa (sinopsis, año, géneros, etc.)",
+    "version": "2.0"
+}
