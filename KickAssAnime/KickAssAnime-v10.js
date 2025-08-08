@@ -203,7 +203,12 @@ async function searchResults(keyword) {
  */
 async function extractDetails(url) {
     try {
-        const response = await fetchv2(url);
+        const response = await fetchv2(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Referer': 'https://kaa.to/'
+            }
+        });
         const html = typeof response === 'object' ? await response.text() : await response;
         
         return JSON.stringify([{
