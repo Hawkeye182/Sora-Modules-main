@@ -14,8 +14,8 @@
     "downloadSupport": true,
     "baseUrl": "https://kaa.to/",
     "searchBaseUrl": "https://kaa.to/api/search",
-    "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo.js",
-    "asyncJS": true,
-    "streamAsyncJS": true,
+    "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo_production.js",
+    "asyncJS": false,
+    "streamAsyncJS": false,
     "softsub": true
 }
