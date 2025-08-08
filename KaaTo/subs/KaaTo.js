@@ -22,6 +22,12 @@ async function searchResults(keyword) {
             body: JSON.stringify({ query: keyword })
         });
 
+        // Handle case where soraFetch returns null (error)
+        if (!response) {
+            console.log('soraFetch returned null - network error');
+            return JSON.stringify([]);
+        }
+
         if (!response.ok) {
             throw new Error(`Search failed: ${response.status}`);
         }
@@ -327,19 +333,39 @@ async function extractDirectM3U8Streams(videoId) {
 // Required soraFetch function for Sora compatibility
 async function soraFetch(url, options = {}) {
     try {
-        // Try fetchv2 first (Sora's preferred method)
+        console.log(`soraFetch: Attempting to fetch ${url}`);
+        
+        // Try fetchv2 first (Sora's preferred method) 
+        // fetchv2 might return data directly, not a Response object
         if (typeof fetchv2 !== 'undefined') {
-            return await fetchv2(url, options.headers ?? {}, options.method ?? 'GET', options.body ?? null);
+            console.log('Using fetchv2');
+            const result = await fetchv2(url, options.headers ?? {}, options.method ?? 'GET', options.body ?? null);
+            console.log(`fetchv2 result:`, result);
+            
+            // If fetchv2 returns data directly (not a Response object), wrap it
+            if (result && typeof result === 'object' && !result.ok && !result.status) {
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => result,
+                    text: async () => JSON.stringify(result)
+                };
+            }
+            
+            return result;
         }
         
         // Fallback to standard fetch
         if (typeof fetch !== 'undefined') {
-            return await fetch(url, options);
+            console.log('Using standard fetch');
+            const response = await fetch(url, options);
+            console.log(`fetch response status: ${response.status}`);
+            return response;
         }
         
         throw new Error('No fetch method available');
     } catch(error) {
         console.log(`soraFetch error: ${error.message}`);
-        return null;
+        return null; // Return null like HikariTv does
     }
 }
