@@ -10,7 +10,12 @@
 ### 2. ❌ **Imágenes incorrectas**
 - **Problema**: Todas las imágenes mostraban el logo genérico
 - **Solución**: ✅ Implementada extracción real de posters desde `item.poster.hq` y `item.poster.sm`
-- **Formato**: `https://kaa.to/image/${poster_id}.webp`
+- **Formato CORREGIDO**: `https://kaa.to/image/poster/${poster_id}.webp`
+
+### 2.1. 🔧 **Corrección de formato de imagen**
+- **Problema**: URLs de imagen tenían formato incorrecto sin `/poster/`
+- **Solución**: ✅ Formato corregido a `https://kaa.to/image/poster/${poster_id}.webp`
+- **Verificación**: Todas las imágenes cargan con código 200
 
 ### 3. ❌ **Información incorrecta**
 - **Problema**: Todos los animes mostraban fecha 2004 y descripción de Bleach
@@ -28,8 +33,14 @@
 - **Problema**: No funcionaba en el entorno de Sora
 - **Solución**: ✅ Implementada compatibilidad completa:
   - Intenta `fetchv2` primero (método preferido de Sora)
+  - Maneja casos donde `fetchv2` retorna datos directamente vs Response object
   - Fallback a `fetch` estándar
-  - Manejo de errores robusto
+  - Manejo de errores robusto con retorno `null` como otros módulos
+
+### 5.1. 🔧 **Corrección crítica de fetchv2**
+- **Problema**: `fetchv2` en Sora retorna datos directamente, no un objeto Response
+- **Solución**: ✅ Detecta formato de respuesta y envuelve datos en objeto Response simulado
+- **Verificación**: Funciona tanto con `fetchv2` directo como con `fetch` estándar
 
 ## 📋 Funciones Corregidas:
 
