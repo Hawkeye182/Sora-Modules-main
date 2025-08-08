@@ -28,9 +28,10 @@ async function searchResults(keyword) {
                 const response = await soraFetch(pageUrl);
                 const html = typeof response === 'object' ? await response.text() : await response;
 
-                // Patrón mejorado basado en la estructura real observada
-                const animePattern = /href="([^"]*\/([^"\/]+))"[^>]*>[\s\S]*?## \[([^\]]+)\]/g;
-                const alternativePattern = /href="(\/[^"\/]+)"[^>]*>[\s\S]*?##\s*([^<\n]+)/g;
+                // Patrón corregido basado en la estructura real observada
+                // Formato: [YEAR](URL) \n ## [TITLE]
+                const animePattern = /\[(\d{4})\]\((https:\/\/kaa\.to\/([^)]+))\)[\s\S]*?##\s*([^\n]+)/g;
+                const alternativePattern = /href="(https:\/\/kaa\.to\/([^"]+))"[\s\S]*?##\s*([^\n]+)/g;
                 
                 // Buscar con el patrón principal
                 let matches = html.matchAll(animePattern);
@@ -43,18 +44,21 @@ async function searchResults(keyword) {
                 }
 
                 for (const match of matchesArray) {
-                    let title, href, slug;
+                    let title, href, slug, year;
                     
-                    if (match.length >= 4) {
-                        // Patrón principal: href, slug, title
+                    if (match.length >= 5) {
+                        // Patrón principal: year, href, slug, title
+                        year = match[1];
+                        href = match[2];
+                        slug = match[3];
+                        title = match[4];
+                    } else if (match.length >= 4) {
+                        // Patrón alternativo: href, slug, title
                         href = match[1];
                         slug = match[2];
                         title = match[3];
                     } else {
-                        // Patrón alternativo: href, title
-                        href = match[1];
-                        title = match[2];
-                        slug = href.split('/').pop();
+                        continue; // Skip if not enough groups
                     }
 
                     title = title?.trim() || 'Título no disponible';
