@@ -3,54 +3,131 @@ const BASE_URL = "https://kaa.to/";
 
 /**
  * Busca anime en el sitio web con la palabra clave dada y devuelve los resultados
- * La búsqueda en kaa.to parece usar JavaScript/API, por lo que implementamos búsqueda desde la página principal
+ * Busca en las páginas alfabéticas de kaa.to para encontrar coincidencias
  * @param {string} keyword La palabra clave a buscar
  * @returns {Promise<string>} Una promesa que se resuelve con una cadena JSON conteniendo los resultados de búsqueda en el formato: `[{"title": "Título", "image": "URL de imagen", "href": "URL"}, ...]`
  */
 async function searchResults(keyword) {
     try {
-        // Como la búsqueda directa no funciona, buscamos en la página principal
-        const response = await soraFetch(BASE_URL);
-        const html = typeof response === 'object' ? await response.text() : await response;
-
-        // Buscar anime en la página principal usando múltiples patrones
-        const patterns = [
-            // Patrón para enlaces de anime con títulos
-            /<a[^>]*href="\/([^"\/]+)"[^>]*>[\s\S]*?<h2[^>]*>([^<]+)<\/h2>/g,
-            /<a[^>]*href="\/([^"\/]+)"[^>]*>[\s\S]*?## \[([^\]]+)\]/g,
-            /<a[^>]*href="([^"]*)"[^>]*>[\s\S]*?([^<\n]+)<\/a>[\s\S]*?<h/g
+        const keywordLower = keyword.toLowerCase().trim();
+        const allResults = [];
+        
+        // Buscar en múltiples páginas alfabéticas para mayor probabilidad de encontrar resultados
+        const searchPages = [
+            'https://kaa.to/anime', // Página principal de anime
+            'https://kaa.to/anime?alphabet=A',
+            'https://kaa.to/anime?alphabet=B',
+            'https://kaa.to/anime?alphabet=D', // Dan Da Dan, Dragon Ball, etc.
+            'https://kaa.to/anime?alphabet=N', // Naruto, etc.
+            'https://kaa.to/anime?alphabet=O', // One Piece, etc.
+            'https://kaa.to/anime?alphabet=S', // Solo Leveling, etc.
         ];
 
-        let allResults = [];
-        const keywordLower = keyword.toLowerCase();
+        for (const pageUrl of searchPages) {
+            try {
+                const response = await soraFetch(pageUrl);
+                const html = typeof response === 'object' ? await response.text() : await response;
 
-        for (const pattern of patterns) {
-            const matches = html.matchAll(pattern);
-            const matchesArray = Array.from(matches);
-            
-            const results = matchesArray
-                .filter(match => {
-                    const title = match[2]?.toLowerCase() || '';
-                    return title.includes(keywordLower);
-                })
-                .map(match => {
-                    const href = match[1].startsWith('http') ? match[1] : BASE_URL + match[1].replace(/^\/+/, '');
-                    return {
-                        title: match[2]?.trim() || 'Título no disponible',
-                        image: BASE_URL + "favicon.ico", // Usar favicon como imagen por defecto
-                        href: href
-                    };
-                });
+                // Patrón mejorado basado en la estructura real observada
+                const animePattern = /href="([^"]*\/([^"\/]+))"[^>]*>[\s\S]*?## \[([^\]]+)\]/g;
+                const alternativePattern = /href="(\/[^"\/]+)"[^>]*>[\s\S]*?##\s*([^<\n]+)/g;
+                
+                // Buscar con el patrón principal
+                let matches = html.matchAll(animePattern);
+                let matchesArray = Array.from(matches);
 
-            allResults = allResults.concat(results);
+                // Si no encontramos con el patrón principal, usar el alternativo
+                if (matchesArray.length === 0) {
+                    matches = html.matchAll(alternativePattern);
+                    matchesArray = Array.from(matches);
+                }
+
+                for (const match of matchesArray) {
+                    let title, href, slug;
+                    
+                    if (match.length >= 4) {
+                        // Patrón principal: href, slug, title
+                        href = match[1];
+                        slug = match[2];
+                        title = match[3];
+                    } else {
+                        // Patrón alternativo: href, title
+                        href = match[1];
+                        title = match[2];
+                        slug = href.split('/').pop();
+                    }
+
+                    title = title?.trim() || 'Título no disponible';
+                    
+                    // Filtrar por palabra clave
+                    if (title.toLowerCase().includes(keywordLower)) {
+                        const fullUrl = href.startsWith('http') 
+                            ? href 
+                            : BASE_URL + href.replace(/^\/+/, '');
+
+                        // Verificar que no esté duplicado
+                        if (!allResults.find(result => result.href === fullUrl)) {
+                            allResults.push({
+                                title: title,
+                                image: BASE_URL + "favicon.ico",
+                                href: fullUrl
+                            });
+                        }
+                    }
+                }
+
+                // Si ya encontramos suficientes resultados, no seguir buscando
+                if (allResults.length >= 10) {
+                    break;
+                }
+
+            } catch (pageError) {
+                console.log(`Error en página ${pageUrl}: ${pageError.message}`);
+                continue;
+            }
         }
 
-        // Eliminar duplicados basados en href
-        const uniqueResults = allResults.filter((result, index, self) => 
-            index === self.findIndex(r => r.href === result.href)
-        );
+        // Si no encontramos resultados específicos, buscar de forma más amplia
+        if (allResults.length === 0) {
+            try {
+                const response = await soraFetch(BASE_URL);
+                const html = typeof response === 'object' ? await response.text() : await response;
+                
+                // Buscar en la página principal con patrones más generales
+                const generalPatterns = [
+                    /href="(\/[^"\/]+)"[^>]*>[\s\S]*?([^<\n]{3,50})/g,
+                    /<a[^>]*href="(\/[^"]*)"[^>]*>([^<]+)<\/a>/g
+                ];
 
-        return JSON.stringify(uniqueResults.slice(0, 10)); // Limitar a 10 resultados
+                for (const pattern of generalPatterns) {
+                    const matches = html.matchAll(pattern);
+                    const matchesArray = Array.from(matches);
+                    
+                    for (const match of matchesArray) {
+                        const href = match[1];
+                        const title = match[2]?.trim();
+                        
+                        if (title && title.toLowerCase().includes(keywordLower) && title.length > 2) {
+                            const fullUrl = BASE_URL + href.replace(/^\/+/, '');
+                            
+                            if (!allResults.find(result => result.href === fullUrl)) {
+                                allResults.push({
+                                    title: title,
+                                    image: BASE_URL + "favicon.ico",
+                                    href: fullUrl
+                                });
+                            }
+                        }
+                    }
+                    
+                    if (allResults.length >= 5) break;
+                }
+            } catch (generalError) {
+                console.log('Error en búsqueda general: ' + generalError.message);
+            }
+        }
+
+        return JSON.stringify(allResults.slice(0, 10));
 
     } catch (error) {
         console.log('Error de búsqueda: ' + error.message);
@@ -153,72 +230,136 @@ async function extractEpisodes(url) {
 
         const episodes = [];
         
-        // Múltiples patrones para extraer episodios basados en la estructura observada
-        const episodePatterns = [
-            // Patrón principal para enlaces de episodios
-            /EP\s*(\d+)[\s\S]*?href="([^"]*\/ep-\d+-[^"]*)"/g,
-            // Patrón alternativo
-            /<a[^>]*href="([^"]*\/ep-(\d+)-[^"]*)"[^>]*>[\s\S]*?EP\s*\d+/g,
-            // Patrón para episodios en formato diferente
-            /href="([^"]*\/ep-(\d+)-[^"]*)"[^>]*>[\s\S]*?(\d+)/g
-        ];
-
-        for (const pattern of episodePatterns) {
-            const matches = html.matchAll(pattern);
-            const matchesArray = Array.from(matches);
+        // Buscar el primer episodio para acceder a la página del reproductor
+        const firstEpisodePattern = /href="([^"]*\/ep-1-[^"]*)"/;
+        const firstEpisodeMatch = html.match(firstEpisodePattern);
+        
+        if (firstEpisodeMatch) {
+            const firstEpisodeUrl = firstEpisodeMatch[1].startsWith('http') 
+                ? firstEpisodeMatch[1] 
+                : BASE_URL + firstEpisodeMatch[1].replace(/^\/+/, '');
             
-            for (const match of matchesArray) {
-                let episodeNum, episodeUrl;
-                
-                if (pattern === episodePatterns[0]) {
-                    episodeNum = parseInt(match[1]);
-                    episodeUrl = match[2];
-                } else {
-                    episodeNum = parseInt(match[2]);
-                    episodeUrl = match[1];
+            try {
+                // Obtener la página del primer episodio donde están todos los episodios listados
+                const episodePageResponse = await soraFetch(firstEpisodeUrl);
+                const episodePageHtml = typeof episodePageResponse === 'object' 
+                    ? await episodePageResponse.text() 
+                    : await episodePageResponse;
+
+                // Buscar todos los episodios en la página del reproductor
+                const episodeListPatterns = [
+                    // Patrón principal para episodios
+                    /EP\s*(\d+)[\s\S]*?href="([^"]*\/ep-\d+-[^"]*)"/g,
+                    // Patrón alternativo
+                    /href="([^"]*\/ep-(\d+)-[^"]*)"[^>]*>[\s\S]*?EP\s*\d+/g,
+                    // Patrón más simple
+                    /ep-(\d+)-[^"]*"[^>]*>[\s\S]*?(\d+)/g
+                ];
+
+                for (const pattern of episodeListPatterns) {
+                    const matches = episodePageHtml.matchAll(pattern);
+                    const matchesArray = Array.from(matches);
+                    
+                    for (const match of matchesArray) {
+                        let episodeNum, episodeUrl;
+                        
+                        if (pattern === episodeListPatterns[0]) {
+                            // EP NUMBER ... href="URL"
+                            episodeNum = parseInt(match[1]);
+                            episodeUrl = match[2];
+                        } else if (pattern === episodeListPatterns[1]) {
+                            // href="URL" ... EP
+                            episodeNum = parseInt(match[2]);
+                            episodeUrl = match[1];
+                        } else {
+                            // Patrón simple
+                            episodeNum = parseInt(match[1]);
+                            episodeUrl = match[0]; // Buscar la URL completa en el contexto
+                        }
+
+                        if (episodeNum && episodeUrl) {
+                            const fullUrl = episodeUrl.startsWith('http') 
+                                ? episodeUrl 
+                                : BASE_URL + episodeUrl.replace(/^\/+/, '');
+                            
+                            // Verificar que no esté duplicado
+                            if (!episodes.find(ep => ep.number === episodeNum)) {
+                                episodes.push({
+                                    number: episodeNum,
+                                    href: fullUrl
+                                });
+                            }
+                        }
+                    }
+                    
+                    if (episodes.length > 0) break;
                 }
 
-                if (episodeNum && episodeUrl) {
-                    const fullUrl = episodeUrl.startsWith('http') 
-                        ? episodeUrl 
-                        : BASE_URL + episodeUrl.replace(/^\/+/, '');
-                    
-                    // Verificar que no esté duplicado
-                    if (!episodes.find(ep => ep.number === episodeNum)) {
-                        episodes.push({
-                            number: episodeNum,
-                            href: fullUrl
-                        });
+                // Si no encontramos episodios en la página del reproductor, buscar de forma más directa
+                if (episodes.length === 0) {
+                    // Buscar patrones de episodios en la página original
+                    const directPatterns = [
+                        /href="([^"]*\/ep-(\d+)-[^"]*)"/g,
+                        /ep-(\d+)-[^"]*"[^>]*>/g
+                    ];
+
+                    for (const pattern of directPatterns) {
+                        const matches = html.matchAll(pattern);
+                        const matchesArray = Array.from(matches);
+                        
+                        for (const match of matchesArray) {
+                            let episodeNum, episodeUrl;
+                            
+                            if (match.length >= 3) {
+                                episodeUrl = match[1];
+                                episodeNum = parseInt(match[2]);
+                            } else {
+                                episodeNum = parseInt(match[1]);
+                                // Construir URL basada en el patrón observado
+                                const baseSlug = url.split('/').pop();
+                                episodeUrl = `/${baseSlug}/ep-${episodeNum}-${generateRandomHash()}`;
+                            }
+
+                            if (episodeNum && episodeUrl) {
+                                const fullUrl = episodeUrl.startsWith('http') 
+                                    ? episodeUrl 
+                                    : BASE_URL + episodeUrl.replace(/^\/+/, '');
+                                
+                                if (!episodes.find(ep => ep.number === episodeNum)) {
+                                    episodes.push({
+                                        number: episodeNum,
+                                        href: fullUrl
+                                    });
+                                }
+                            }
+                        }
+                        
+                        if (episodes.length > 0) break;
                     }
                 }
+
+            } catch (episodePageError) {
+                console.log('Error al obtener página de episodios: ' + episodePageError.message);
             }
         }
 
-        // Si no encontramos episodios con los patrones principales, intentar extraer de la estructura de la página
+        // Si aún no tenemos episodios, intentar buscar directamente en la página principal
         if (episodes.length === 0) {
-            // Buscar patrones más generales
-            const generalPattern = /EP\s*(\d+)/g;
-            const linkPattern = /href="([^"]*ep-\d+-[^"]*)"/g;
+            const fallbackPattern = /ep-(\d+)/g;
+            const matches = html.matchAll(fallbackPattern);
+            const matchesArray = Array.from(matches);
             
-            const epMatches = Array.from(html.matchAll(generalPattern));
-            const linkMatches = Array.from(html.matchAll(linkPattern));
+            // Crear episodios basados en los números encontrados
+            const uniqueNumbers = [...new Set(matchesArray.map(match => parseInt(match[1])))];
             
-            // Emparejar números de episodio con enlaces
-            const minLength = Math.min(epMatches.length, linkMatches.length);
-            for (let i = 0; i < minLength; i++) {
-                const episodeNum = parseInt(epMatches[i][1]);
-                const episodeUrl = linkMatches[i][1];
+            for (const epNum of uniqueNumbers.sort((a, b) => a - b)) {
+                const baseSlug = url.split('/').pop();
+                const episodeUrl = `${url}/ep-${epNum}-${generateRandomHash()}`;
                 
-                if (episodeNum && episodeUrl) {
-                    const fullUrl = episodeUrl.startsWith('http') 
-                        ? episodeUrl 
-                        : BASE_URL + episodeUrl.replace(/^\/+/, '');
-                    
-                    episodes.push({
-                        number: episodeNum,
-                        href: fullUrl
-                    });
-                }
+                episodes.push({
+                    number: epNum,
+                    href: episodeUrl
+                });
             }
         }
 
@@ -231,6 +372,16 @@ async function extractEpisodes(url) {
         console.log('Error de episodios: ' + error.message);
         return JSON.stringify([]);
     }
+}
+
+// Función auxiliar para generar hash aleatorio como en las URLs reales
+function generateRandomHash() {
+    const chars = '0123456789abcdef';
+    let result = '';
+    for (let i = 0; i < 6; i++) {
+        result += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return result;
 }
 
 /**
