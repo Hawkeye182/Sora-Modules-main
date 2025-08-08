@@ -1,0 +1,20 @@
+{
+    "sourceName": "KaaTo",
+    "iconUrl": "https://kaa.to/favicon.ico",
+    "author": {
+        "name": "GitHub Copilot Assistant",
+        "icon": "https://raw.githubusercontent.com/ShadeOfChaos/Sora-Modules/refs/heads/main/ofchaos.jpg",
+        "url": "https://github.com/ShadeOfChaos/Sora-Modules"
+    },
+    "version": "1.0.0",
+    "language": "Multi (SUB/DUB)",
+    "streamType": "HLS",
+    "quality": "1080p",
+    "type": "anime",
+    "baseUrl": "kaa.to",
+    "searchBaseUrl": "https://kaa.to/api/search",
+    "scriptUrl": "https://raw.githubusercontent.com/ShadeOfChaos/Sora-Modules/refs/heads/main/KaaTo/dev/KaaTo_final_enhanced.js",
+    "asyncJS": true,
+    "streamAsyncJS": true,
+    "softsub": false
+}
