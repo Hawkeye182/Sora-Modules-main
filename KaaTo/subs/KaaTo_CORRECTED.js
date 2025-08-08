@@ -44,60 +44,62 @@ async function searchResults(keyword) {
 
 async function extractDetails(url) {
     try {
+        // Manejar URLs de información/debug
+        if (url.startsWith('info://') || url.startsWith('debug://')) {
+            return JSON.stringify([{
+                description: "Este es el módulo KaaTo para extraer animes de kaa.to",
+                aliases: "KaaTo Module",
+                airdate: "2024"
+            }]);
+        }
+        
         // Extraer slug de la URL
         const slug = url.split('/anime/')[1] || url.split('/').pop();
         
         // Llamar a la API de detalles
         const response = await fetchv2(`https://kaa.to/api/show/${slug}`);
         
-        if (response && response.status === 200 && response._data) {
+        if (response && response._data) {
             let details = response._data;
             if (typeof details === 'string') {
                 details = JSON.parse(details);
             }
             
-            // Crear objeto con los detalles usando la estructura real de la API
+            // Formatear según lo que espera Sora: array con objeto {description, aliases, airdate}
             const result = {
-                title: details.title || details.title_en || "Título no disponible",
-                description: details.synopsis || details.description || "Sinopsis no disponible",
-                releaseDate: details.year ? details.year.toString() : "Año desconocido",
-                status: details.status || "Estado desconocido",
-                genres: Array.isArray(details.genres) ? details.genres : [],
-                image: details.poster ? 
-                    `https://kaa.to/image/poster/${details.poster.hq || details.poster.sm || 'default'}.webp` : 
-                    "https://via.placeholder.com/300x400/cccccc/ffffff?text=Sin+Imagen"
+                description: details.synopsis || details.description || "Sin descripción disponible",
+                aliases: [
+                    details.title_en,
+                    details.title_original
+                ].filter(title => title && title !== details.title).join(', ') || '',
+                airdate: details.year ? `Año: ${details.year}` : (details.start_date ? `Aired: ${details.start_date}` : 'Aired: Unknown')
             };
             
-            // Agregar títulos alternativos si existen
-            if (details.title_en || details.title_original) {
-                result.otherTitles = [details.title_en, details.title_original].filter(t => t && t !== details.title);
-            }
-            
-            return JSON.stringify(result);
+            return JSON.stringify([result]);
         } else {
-            throw new Error(`API respondió con status: ${response ? response.status : 'sin respuesta'}`);
+            return JSON.stringify([{
+                description: "Error obteniendo detalles del anime",
+                aliases: "",
+                airdate: "Aired: Unknown"
+            }]);
         }
     } catch (error) {
-        console.error('Error en extractDetails:', error);
-        return JSON.stringify({
-            title: "Error obteniendo detalles",
-            description: `No se pudieron obtener los detalles: ${error.message}`,
-            releaseDate: "2024",
-            status: "Error",
-            genres: ["Error"],
-            image: "https://via.placeholder.com/300x400/F44336/white?text=ERROR"
-        });
+        console.log('Details error: ' + error.message);
+        return JSON.stringify([{
+            description: 'Error loading description: ' + error.message,
+            aliases: '',
+            airdate: 'Aired: Unknown'
+        }]);
     }
 }
 
 async function extractEpisodes(url) {
     try {
-        // Manejar URLs de información
+        // Manejar URLs de información/debug
         if (url.startsWith('info://') || url.startsWith('debug://')) {
             return JSON.stringify([{
-                title: "Información del módulo KaaTo",
                 href: url,
-                episode: 1
+                number: 1
             }]);
         }
         
@@ -124,33 +126,30 @@ async function extractEpisodes(url) {
             
             if (episodes.length > 0) {
                 const episodeList = episodes.map((ep, index) => ({
-                    title: ep.title || `Episodio ${ep.episode || ep.number || index + 1}`,
                     href: ep.watch_uri ? `https://kaa.to${ep.watch_uri}` : `https://kaa.to/anime/${slug}/episode/${ep.episode || index + 1}`,
-                    episode: ep.episode || ep.number || index + 1
+                    number: ep.episode || ep.number || index + 1
                 }));
                 
                 return JSON.stringify(episodeList);
             } else {
-                // Si no hay episodios en pages, intentar estructura alternativa
+                // Si no hay episodios, retornar episodio genérico
                 return JSON.stringify([{
-                    title: "Episodios disponibles en kaa.to",
                     href: `https://kaa.to/anime/${slug}`,
-                    episode: 1
+                    number: 1
                 }]);
             }
         } else {
             return JSON.stringify([{
-                title: "Error obteniendo episodios",
-                href: url + "/error",
-                episode: 1
+                href: url,
+                number: 1
             }]);
         }
         
     } catch (error) {
+        console.log('Episodes error: ' + error.message);
         return JSON.stringify([{
-            title: "Error: " + error.message,
-            href: url + "/error",
-            episode: 1
+            href: url,
+            number: 1
         }]);
     }
 }
