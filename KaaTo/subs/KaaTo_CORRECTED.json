@@ -1,17 +1,21 @@
 {
-    "sourceName": "KaaTo - CORREGIDO",
-    "sources": [
-        {
-            "base_url": "https://kaa.to/",
-            "href": "https://raw.githubusercontent.com/YOURUSERNAME/YOURREPO/main/KaaTo/subs/KaaTo_CORRECTED.js"
-        }
-    ],
-    "language": "es",
-    "streamAsyncJS": true,
+    "sourceName": "KaaTo CORRECTED",
+    "iconUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/logo.png",
+    "author": {
+        "name": "Hawkeye182",
+        "icon": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
+        "url": "https://github.com/Hawkeye182/Sora-Modules-main"
+    },
+    "version": "2.0.0",
+    "language": "subs",
+    "streamType": "HLS",
+    "quality": "1080p",
+    "type": "anime",
+    "downloadSupport": true,
+    "baseUrl": "https://kaa.to/",
+    "searchBaseUrl": "https://kaa.to/api/search",
+    "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo_CORRECTED.js",
     "asyncJS": true,
-    "timeout": 30,
-    "homepage": "https://kaa.to",
-    "logo": "https://kaa.to/favicon.ico",
-    "description": "Módulo corregido para extraer animes de kaa.to con información completa (sinopsis, año, géneros, etc.)",
-    "version": "2.0"
+    "streamAsyncJS": true,
+    "softsub": true
 }
