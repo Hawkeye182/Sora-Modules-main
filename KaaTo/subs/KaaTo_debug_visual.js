@@ -1,8 +1,5 @@
-// 🔍 Debug para Sora - Entendiendo qué funciona y qué no
-// Basado en el análisis del código fuente de Sora
-
 // 🔍 Debug Visual para Sora - Información mostrada como animes
-// Para ver qué funciona y qué no en el entorno de Sora
+// Para ver logs y entender qué funciona en el entorno de Sora
 
 function searchResults(keyword) {
     // Crear resultados de debug mostrados como "animes"
@@ -14,7 +11,7 @@ function searchResults(keyword) {
         },
         {
             title: `🌐 fetch: ${typeof fetch !== 'undefined' ? 'DISPONIBLE ✅' : 'NO DISPONIBLE ❌'}`,
-            link: "debug://fetch",
+            link: "debug://fetch", 
             image: "https://via.placeholder.com/300x400/28a745/fff?text=fetch+Test"
         },
         {
@@ -55,7 +52,7 @@ function searchResults(keyword) {
         try {
             const kaaResponse = fetchv2('https://kaa.to/api/search?q=naruto');
             debugResults.push({
-                title: `� kaa.to API: ${kaaResponse ? 'CONECTADO ✅' : 'SIN CONEXIÓN ❌'}`,
+                title: `🎌 kaa.to API: ${kaaResponse ? 'CONECTADO ✅' : 'SIN CONEXIÓN ❌'}`,
                 link: "debug://kaa-api",
                 image: "https://via.placeholder.com/300x400/20c997/fff?text=KaaTo+API"
             });
@@ -76,37 +73,18 @@ function searchResults(keyword) {
     
     return JSON.stringify(debugResults);
 }
-                });
-            }
-        } catch (error) {
-            console.log("❌ [SORA-DEBUG] Error en API kaa.to:", error);
-            results.push({
-                title: `⚠️ 7. API Error: ${error.message.substring(0, 20)}`,
-                link: "debug://api-error",
-                image: "https://kaa.to/image/poster/api-error.webp"
-            });
-        }
-    }
-    
-    console.log("📤 [SORA-DEBUG] Retornando", results.length, "resultados");
-    return JSON.stringify(results);
-}
 
 function extractDetails(url) {
-    console.log("📋 [SORA-DEBUG] extractDetails llamado con:", url);
-    
     return JSON.stringify({
         title: "🔍 Debug de Detalles",
-        description: "Este es el módulo debug para entender cómo funciona Sora internamente. URL: " + url,
-        image: "https://kaa.to/image/poster/debug.webp",
+        description: "Módulo debug para entender Sora. URL: " + url,
+        image: "https://via.placeholder.com/300x400/333/fff?text=Debug+Details",
         releaseDate: "2024",
         aliases: ["Debug Module", "Sora Test"]
     });
 }
 
 function extractEpisodes(url) {
-    console.log("📺 [SORA-DEBUG] extractEpisodes llamado con:", url);
-    
     return JSON.stringify([
         { title: "Debug Episode 1", link: url + "/episode/1", episode: 1 },
         { title: "Debug Episode 2", link: url + "/episode/2", episode: 2 }
@@ -114,8 +92,6 @@ function extractEpisodes(url) {
 }
 
 function extractStreamUrl(url) {
-    console.log("🎥 [SORA-DEBUG] extractStreamUrl llamado con:", url);
-    
     return JSON.stringify({
         streamUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
         quality: "1080p",
