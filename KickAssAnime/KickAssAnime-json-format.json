@@ -1,0 +1,16 @@
+{
+  "sourceName": "KickAssAnime JSON Format",
+  "author": {
+    "name": "Tu Nombre",
+    "icon": "https://avatars.githubusercontent.com/u/100000000?v=4"
+  },
+  "iconUrl": "https://kaa.to/favicon.ico",
+  "version": "4.0.0",
+  "language": "Japanese (English Subtitles)",
+  "baseUrl": "https://kaa.to/",
+  "streamType": "HLS",
+  "quality": "1080p",
+  "searchBaseUrl": "https://kaa.to/search?q=%s",
+  "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/main/KickAssAnime/KickAssAnime-json-format.js",
+  "asyncJS": true
+}
