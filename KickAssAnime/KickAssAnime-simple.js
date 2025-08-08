@@ -16,7 +16,7 @@ async function searchResults(keyword) {
         const firstLetter = keywordLower.charAt(0).toUpperCase();
         const searchUrl = `${BASE_URL}/anime?alphabet=${firstLetter}`;
         
-        const response = await soraFetch(searchUrl);
+        const response = await fetchv2(searchUrl);
         const html = typeof response === 'object' ? await response.text() : await response;
 
         // Buscar múltiples patrones simples
