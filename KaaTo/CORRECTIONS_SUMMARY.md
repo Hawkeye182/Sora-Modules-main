@@ -3,26 +3,31 @@
 ## 🚨 Problemas Identificados y Solucionados:
 
 ### 1. ❌ **Búsqueda limitada**
+
 - **Problema**: Solo funcionaba con términos exactos como "dragon ball", no con "dragon"
 - **Solución**: ✅ Eliminado el sistema de fallback restrictivo, ahora usa la API real de kaa.to
 - **Resultado**: Búsquedas flexibles funcionan correctamente
 
 ### 2. ❌ **Imágenes incorrectas**
+
 - **Problema**: Todas las imágenes mostraban el logo genérico
 - **Solución**: ✅ Implementada extracción real de posters desde `item.poster.hq` y `item.poster.sm`
 - **Formato CORREGIDO**: `https://kaa.to/image/poster/${poster_id}.webp`
 
 ### 2.1. 🔧 **Corrección de formato de imagen**
+
 - **Problema**: URLs de imagen tenían formato incorrecto sin `/poster/`
 - **Solución**: ✅ Formato corregido a `https://kaa.to/image/poster/${poster_id}.webp`
 - **Verificación**: Todas las imágenes cargan con código 200
 
 ### 3. ❌ **Información incorrecta**
+
 - **Problema**: Todos los animes mostraban fecha 2004 y descripción de Bleach
 - **Solución**: ✅ Extracción real desde `https://kaa.to/api/show/{slug}`
 - **Datos corregidos**: Descripción, fecha de emisión, aliases específicos por anime
 
 ### 4. ❌ **Videos no cargan**
+
 - **Problema**: `extractStreamUrl` no funcionaba correctamente
 - **Solución**: ✅ Implementado sistema robusto con múltiples métodos:
   - Extracción directa desde `episodeData.videos`
@@ -30,6 +35,7 @@
   - URLs directas a `hls.krussdomi.com`
 
 ### 5. ❌ **Función soraFetch incompatible**
+
 - **Problema**: No funcionaba en el entorno de Sora
 - **Solución**: ✅ Implementada compatibilidad completa:
   - Intenta `fetchv2` primero (método preferido de Sora)
@@ -38,6 +44,7 @@
   - Manejo de errores robusto con retorno `null` como otros módulos
 
 ### 5.1. 🔧 **Corrección crítica de fetchv2**
+
 - **Problema**: `fetchv2` en Sora retorna datos directamente, no un objeto Response
 - **Solución**: ✅ Detecta formato de respuesta y envuelve datos en objeto Response simulado
 - **Verificación**: Funciona tanto con `fetchv2` directo como con `fetch` estándar
@@ -45,6 +52,7 @@
 ## 📋 Funciones Corregidas:
 
 ### ✅ `searchResults(keyword)`
+
 ```javascript
 // Ahora busca en la API real sin restricciones
 POST https://kaa.to/api/search
@@ -53,6 +61,7 @@ Body: {"query": "cualquier_termino"}
 ```
 
 ### ✅ `extractDetails(url)`
+
 ```javascript
 // Extrae información específica del anime
 GET https://kaa.to/api/show/{slug}
@@ -60,6 +69,7 @@ GET https://kaa.to/api/show/{slug}
 ```
 
 ### ✅ `extractEpisodes(url)`
+
 ```javascript
 // Lista episodios reales del anime
 GET https://kaa.to/api/show/{slug}/episodes
@@ -67,6 +77,7 @@ GET https://kaa.to/api/show/{slug}/episodes
 ```
 
 ### ✅ `extractStreamUrl(url)`
+
 ```javascript
 // Múltiples métodos de extracción:
 // 1. Videos directos desde episodeData.videos
@@ -77,16 +88,19 @@ GET https://kaa.to/api/show/{slug}/episodes
 ## 🎯 URLs Actualizadas para Sora:
 
 ### **SUB (Recomendada)**:
+
 ```
 https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo.json
 ```
 
 ### **DUB**:
+
 ```
 https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/dubs/KaaTo.json
 ```
 
 ### **RAW**:
+
 ```
 https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/raw/KaaTo.json
 ```
@@ -94,6 +108,7 @@ https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/K
 ## 📤 Pasos para Actualizar:
 
 1. **Subir cambios a GitHub**:
+
    ```bash
    git add .
    git commit -m "Fix KaaTo module - search, images, details, streaming"
