@@ -3,135 +3,48 @@ const BASE_URL = "https://kaa.to/";
 
 /**
  * Busca anime en el sitio web con la palabra clave dada y devuelve los resultados
- * Busca en las páginas alfabéticas de kaa.to para encontrar coincidencias
+ * Optimizado para hacer UNA SOLA petición como los otros módulos exitosos
  * @param {string} keyword La palabra clave a buscar
  * @returns {Promise<string>} Una promesa que se resuelve con una cadena JSON conteniendo los resultados de búsqueda en el formato: `[{"title": "Título", "image": "URL de imagen", "href": "URL"}, ...]`
  */
 async function searchResults(keyword) {
     try {
         const keywordLower = keyword.toLowerCase().trim();
-        const allResults = [];
         
-        // Buscar en múltiples páginas alfabéticas para mayor probabilidad de encontrar resultados
-        const searchPages = [
-            'https://kaa.to/anime', // Página principal de anime
-            'https://kaa.to/anime?alphabet=A',
-            'https://kaa.to/anime?alphabet=B',
-            'https://kaa.to/anime?alphabet=D', // Dan Da Dan, Dragon Ball, etc.
-            'https://kaa.to/anime?alphabet=N', // Naruto, etc.
-            'https://kaa.to/anime?alphabet=O', // One Piece, etc.
-            'https://kaa.to/anime?alphabet=S', // Solo Leveling, etc.
-        ];
-
-        for (const pageUrl of searchPages) {
-            try {
-                const response = await soraFetch(pageUrl);
-                const html = typeof response === 'object' ? await response.text() : await response;
-
-                // Patrón corregido basado en la estructura real observada
-                // Formato: [YEAR](URL) \n ## [TITLE]
-                const animePattern = /\[(\d{4})\]\((https:\/\/kaa\.to\/([^)]+))\)[\s\S]*?##\s*([^\n]+)/g;
-                const alternativePattern = /href="(https:\/\/kaa\.to\/([^"]+))"[\s\S]*?##\s*([^\n]+)/g;
-                
-                // Buscar con el patrón principal
-                let matches = html.matchAll(animePattern);
-                let matchesArray = Array.from(matches);
-
-                // Si no encontramos con el patrón principal, usar el alternativo
-                if (matchesArray.length === 0) {
-                    matches = html.matchAll(alternativePattern);
-                    matchesArray = Array.from(matches);
-                }
-
-                for (const match of matchesArray) {
-                    let title, href, slug, year;
-                    
-                    if (match.length >= 5) {
-                        // Patrón principal: year, href, slug, title
-                        year = match[1];
-                        href = match[2];
-                        slug = match[3];
-                        title = match[4];
-                    } else if (match.length >= 4) {
-                        // Patrón alternativo: href, slug, title
-                        href = match[1];
-                        slug = match[2];
-                        title = match[3];
-                    } else {
-                        continue; // Skip if not enough groups
-                    }
-
-                    title = title?.trim() || 'Título no disponible';
-                    
-                    // Filtrar por palabra clave
-                    if (title.toLowerCase().includes(keywordLower)) {
-                        const fullUrl = href.startsWith('http') 
-                            ? href 
-                            : BASE_URL + href.replace(/^\/+/, '');
-
-                        // Verificar que no esté duplicado
-                        if (!allResults.find(result => result.href === fullUrl)) {
-                            allResults.push({
-                                title: title,
-                                image: BASE_URL + "favicon.ico",
-                                href: fullUrl
-                            });
-                        }
-                    }
-                }
-
-                // Si ya encontramos suficientes resultados, no seguir buscando
-                if (allResults.length >= 10) {
-                    break;
-                }
-
-            } catch (pageError) {
-                console.log(`Error en página ${pageUrl}: ${pageError.message}`);
-                continue;
-            }
+        // Determinar la página alfabética más probable basada en la primera letra
+        const firstLetter = keywordLower.charAt(0).toUpperCase();
+        let searchUrl = 'https://kaa.to/anime'; // URL por defecto
+        
+        // Si es una letra válida, buscar en esa página alfabética específica
+        if (/[A-Z]/.test(firstLetter)) {
+            searchUrl = `https://kaa.to/anime?alphabet=${firstLetter}`;
         }
 
-        // Si no encontramos resultados específicos, buscar de forma más amplia
-        if (allResults.length === 0) {
-            try {
-                const response = await soraFetch(BASE_URL);
-                const html = typeof response === 'object' ? await response.text() : await response;
-                
-                // Buscar en la página principal con patrones más generales
-                const generalPatterns = [
-                    /href="(\/[^"\/]+)"[^>]*>[\s\S]*?([^<\n]{3,50})/g,
-                    /<a[^>]*href="(\/[^"]*)"[^>]*>([^<]+)<\/a>/g
-                ];
+        // Hacer UNA SOLA petición (como AnimeHeaven y otros módulos)
+        const response = await soraFetch(searchUrl);
+        const html = typeof response === 'object' ? await response.text() : await response;
 
-                for (const pattern of generalPatterns) {
-                    const matches = html.matchAll(pattern);
-                    const matchesArray = Array.from(matches);
-                    
-                    for (const match of matchesArray) {
-                        const href = match[1];
-                        const title = match[2]?.trim();
-                        
-                        if (title && title.toLowerCase().includes(keywordLower) && title.length > 2) {
-                            const fullUrl = BASE_URL + href.replace(/^\/+/, '');
-                            
-                            if (!allResults.find(result => result.href === fullUrl)) {
-                                allResults.push({
-                                    title: title,
-                                    image: BASE_URL + "favicon.ico",
-                                    href: fullUrl
-                                });
-                            }
-                        }
-                    }
-                    
-                    if (allResults.length >= 5) break;
-                }
-            } catch (generalError) {
-                console.log('Error en búsqueda general: ' + generalError.message);
-            }
-        }
+        // Regex simplificado y directo (como en AnimeHeaven)
+        const ANIME_REGEX = /\[(\d{4})\]\((https:\/\/kaa\.to\/([^)]+))\)[\s\S]*?##\s*([^\n]+)/g;
+        
+        const matches = html.matchAll(ANIME_REGEX);
+        const matchesArray = Array.from(matches);
+        
+        const results = matchesArray
+            .filter(match => {
+                const title = match[4]?.toLowerCase() || '';
+                return title.includes(keywordLower);
+            })
+            .map(match => {
+                return {
+                    title: match[4].trim(),
+                    image: BASE_URL + "favicon.ico",
+                    href: match[2]
+                };
+            })
+            .slice(0, 10); // Limitar a 10 resultados
 
-        return JSON.stringify(allResults.slice(0, 10));
+        return JSON.stringify(results);
 
     } catch (error) {
         console.log('Error de búsqueda: ' + error.message);
