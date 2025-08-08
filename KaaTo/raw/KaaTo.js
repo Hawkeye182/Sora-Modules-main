@@ -1,12 +1,114 @@
 // KaaTo Module - Enhanced Final Version with M3U8 Direct Stream Extraction
 // Based on kaa.to API and user's network analysis data
 
-function soraFetch(url, options = {}) {
-    return fetch(url, options);
-}
-
 // Function to extract video ID from iframe URL
 function extractVideoId(iframeUrl) {
+    const match = iframeUrl.match(/id=([^&]+)/);
+    return match ? match[1] : null;
+}
+
+// Function to parse M3U8 master playlist and extract stream URLs
+function parseM3U8Master(masterPlaylist, videoId) {
+    const lines = masterPlaylist.split('\n');
+    const streams = {
+        video: [],
+        audio: []
+    };
+    
+    let currentStream = null;
+    
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        
+        if (line.startsWith('#EXT-X-STREAM-INF:')) {
+            // Extract stream info: #EXT-X-STREAM-INF:BANDWIDTH=2176000,RESOLUTION=1920x1080,CODECS="avc1.640028,mp4a.40.2"
+            currentStream = {
+                bandwidth: 0,
+                resolution: '',
+                codecs: '',
+                url: ''
+            };
+            
+            const bandwidthMatch = line.match(/BANDWIDTH=(\d+)/);
+            if (bandwidthMatch) currentStream.bandwidth = parseInt(bandwidthMatch[1]);
+            
+            const resolutionMatch = line.match(/RESOLUTION=(\d+x\d+)/);
+            if (resolutionMatch) currentStream.resolution = resolutionMatch[1];
+            
+            const codecsMatch = line.match(/CODECS="([^"]+)"/);
+            if (codecsMatch) currentStream.codecs = codecsMatch[1];
+
+        } else if (line && !line.startsWith('#') && currentStream) {
+            // Video stream URL: 64cd84b244c6d04c12230479/playlist.m3u8
+            currentStream.url = `https://hls.krussdomi.com/manifest/${videoId}/${line}`;
+            
+            // Determine quality based on resolution
+            let quality = 'unknown';
+            if (currentStream.resolution === '1920x1080') quality = '1080p';
+            else if (currentStream.resolution === '1280x720') quality = '720p';
+            else if (currentStream.resolution === '640x360') quality = '360p';
+            
+            currentStream.quality = quality;
+            streams.video.push(currentStream);
+            currentStream = null;
+        }
+    }
+
+    // Sort by quality (bandwidth descending)
+    streams.video.sort((a, b) => b.bandwidth - a.bandwidth);
+
+    return streams;
+}
+
+// Function to extract direct M3U8 streams from kaa.to
+async function extractDirectM3U8Streams(videoId) {
+    try {
+        // Direct M3U8 master playlist URL based on user's network analysis
+        const masterUrl = `https://hls.krussdomi.com/manifest/${videoId}/master.m3u8`;
+        
+        const headers = {
+            'Accept': '*/*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Origin': 'https://kaa.to',
+            'Referer': 'https://kaa.to/',
+            'Sec-Fetch-Dest': 'empty',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Site': 'same-site',
+            'Sec-Gpc': '1',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36'
+        };
+
+        const response = await soraFetch(masterUrl, { headers });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const masterPlaylist = await response.text();
+        
+        // Parse M3U8 master playlist
+        const streams = parseM3U8Master(masterPlaylist, videoId);
+        
+        if (streams.video.length > 0) {
+            // Return the highest quality video stream URL
+            return streams.video[0].url;
+        } else {
+            // Fallback to master URL if individual streams not found
+            return masterUrl;
+        }
+        
+    } catch (error) {
+        console.log(`M3U8 extraction failed for ${videoId}: ${error.message}`);
+        return null;
+    }
+}
+
+/**
+ * Searches the website for anime with the given keyword and returns the results
+ * @param {string} keyword The keyword to search for
+ * @returns {Promise<string>} A promise that resolves with a JSON string containing the search results in the format: `[{"title": "Title", "image": "Image URL", "href": "URL"}, ...]`
+ */
+async function searchResults(keyword) {
     const match = iframeUrl.match(/id=([^&]+)/);
     return match ? match[1] : null;
 }
@@ -364,5 +466,17 @@ async function areRequiredServersUp() {
     } catch (error) {
         console.log(`Server status check failed: ${error.message}`);
         return true; // Assume servers are up if check fails
+    }
+}
+
+async function soraFetch(url, options = { headers: {}, method: 'GET', body: null }) {
+    try {
+        return await fetchv2(url, options.headers ?? {}, options.method ?? 'GET', options.body ?? null);
+    } catch(e) {
+        try {
+            return await fetch(url, options);
+        } catch(error) {
+            return null;
+        }
     }
 }
