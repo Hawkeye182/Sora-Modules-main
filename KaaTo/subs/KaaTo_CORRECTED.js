@@ -18,13 +18,6 @@ async function searchResults(keyword) {
                     href: `https://kaa.to/anime/${anime.slug}`
                 }));
                 
-                // Agregar mensaje informativo
-                results.unshift({
-                    title: `📊 ${results.length} resultados de kaa.to para "${keyword}"`,
-                    image: "https://via.placeholder.com/300x400/4CAF50/white?text=KAATO+RESULTS",
-                    href: "info://search-info"
-                });
-                
                 return JSON.stringify(results);
             } else {
                 return JSON.stringify([{
@@ -51,54 +44,44 @@ async function searchResults(keyword) {
 
 async function extractDetails(url) {
     try {
-        // Manejar URLs de información
-        if (url.startsWith('info://') || url.startsWith('debug://')) {
-            return JSON.stringify({
-                title: "Información de KaaTo",
-                description: "Este módulo extrae animes de kaa.to usando su API oficial. Limitado a 5 resultados por búsqueda según el diseño de la API.",
-                releaseDate: "2024",
-                status: "Módulo funcionando",
-                genres: ["Información", "KaaTo", "API"],
-                image: "https://via.placeholder.com/300x400/4CAF50/white?text=KAATO+INFO"
-            });
-        }
-        
+        // Extraer slug de la URL
         const slug = url.split('/anime/')[1] || url.split('/').pop();
+        
+        // Llamar a la API de detalles
         const response = await fetchv2(`https://kaa.to/api/show/${slug}`);
         
-        if (response && response._data) {
+        if (response && response.status === 200 && response._data) {
             let details = response._data;
             if (typeof details === 'string') {
                 details = JSON.parse(details);
             }
             
-            // Usar la estructura real de la API
-            return JSON.stringify({
-                title: details.title || details.title_en || "Sin título",
-                description: details.synopsis || details.description || "Sin descripción disponible",
-                releaseDate: details.year ? details.year.toString() : (details.start_date ? new Date(details.start_date).getFullYear().toString() : "Desconocido"),
-                status: details.status || "Desconocido",
-                genres: details.genres || [],
-                otherTitles: [
-                    details.title_en,
-                    details.title_original
-                ].filter(title => title && title !== details.title),
-                image: `https://kaa.to/image/poster/${details.poster?.hq || details.poster?.sm || 'default'}.webp`
-            });
+            // Crear objeto con los detalles usando la estructura real de la API
+            const result = {
+                title: details.title || details.title_en || "Título no disponible",
+                description: details.synopsis || details.description || "Sinopsis no disponible",
+                releaseDate: details.year ? details.year.toString() : "Año desconocido",
+                status: details.status || "Estado desconocido",
+                genres: Array.isArray(details.genres) ? details.genres : [],
+                image: details.poster ? 
+                    `https://kaa.to/image/poster/${details.poster.hq || details.poster.sm || 'default'}.webp` : 
+                    "https://via.placeholder.com/300x400/cccccc/ffffff?text=Sin+Imagen"
+            };
+            
+            // Agregar títulos alternativos si existen
+            if (details.title_en || details.title_original) {
+                result.otherTitles = [details.title_en, details.title_original].filter(t => t && t !== details.title);
+            }
+            
+            return JSON.stringify(result);
         } else {
-            return JSON.stringify({
-                title: "Error obteniendo detalles",
-                description: "No se pudieron obtener los detalles del anime desde kaa.to",
-                releaseDate: "2024",
-                status: "Error",
-                genres: ["Error"],
-                image: "https://via.placeholder.com/300x400/F44336/white?text=ERROR"
-            });
+            throw new Error(`API respondió con status: ${response ? response.status : 'sin respuesta'}`);
         }
     } catch (error) {
+        console.error('Error en extractDetails:', error);
         return JSON.stringify({
-            title: "Error en extractDetails",
-            description: "Error al procesar detalles: " + error.message,
+            title: "Error obteniendo detalles",
+            description: `No se pudieron obtener los detalles: ${error.message}`,
             releaseDate: "2024",
             status: "Error",
             genres: ["Error"],
