@@ -16,7 +16,7 @@ async function searchResults(keyword) {
         // Método 1: Intentar el buscador oficial de kaa.to
         try {
             const searchUrl = `https://kaa.to/search?q=${encodeURIComponent(keyword)}`;
-            const searchResponse = await soraFetch(searchUrl);
+            const searchResponse = await fetchv2(searchUrl);
             const searchHtml = await searchResponse.text();
             
             // Si el buscador oficial funciona, extraer resultados
@@ -81,7 +81,7 @@ async function searchResults(keyword) {
         // Buscar en las páginas seleccionadas
         for (const searchUrl of searchPages) {
             try {
-                const response = await soraFetch(searchUrl);
+                const response = await fetchv2(searchUrl);
                 const html = await response.text();
 
                 const ANIME_REGEX = /\[(\d{4})\]\((https:\/\/kaa\.to\/([^)]+))\)[\s\S]*?##\s*([^\n]+)/g;
