@@ -1,9 +1,59 @@
-// KickAssAnime v9.0.0 - Búsqueda en múltiples páginas alfabéticas
-const BASE_URL = "https://kaa.to";
+// Test del módulo v9.0.0 con múltiples páginas
+const BASE_URL = 'https://kaa.to';
 
-/**
- * Función de búsqueda mejorada que busca en múltiples páginas
- */
+// Mock con datos de múltiples páginas
+async function fetchv2(url) {
+    console.log(`📡 Fetching: ${url}`);
+    
+    if (url.includes('alphabet=N')) {
+        return {
+            text: async () => `
+            <script>
+            var animeData = [
+                {title_jp:"Naruto",title_en:"Naruto",slug:"naruto-f3cf"},
+                {title_jp:"Naruto: Shippuuden",title_en:"Naruto Shippuden",slug:"naruto-shippuden-43fe"}
+            ];
+            </script>
+            `
+        };
+    } else if (url.includes('alphabet=C')) {
+        // Dragon Ball está en la página C
+        return {
+            text: async () => `
+            <script>
+            var animeData = [
+                {title_jp:"Dragon Ball",title_en:"Dragon Ball",slug:"dragon-ball-1a2b"},
+                {title_jp:"Dragon Ball Z",title_en:"Dragon Ball Z",slug:"dragon-ball-z-3c4d"}
+            ];
+            </script>
+            `
+        };
+    } else if (url.includes('alphabet=D')) {
+        return {
+            text: async () => `
+            <script>
+            var animeData = [
+                {title_jp:"Dandadan",title_en:"Dan Da Dan",slug:"dandadan-da3b"}
+            ];
+            </script>
+            `
+        };
+    } else if (url.includes('alphabet=O')) {
+        return {
+            text: async () => `
+            <script>
+            var animeData = [
+                {title_jp:"One Piece",title_en:"One Piece",slug:"one-piece-0948"}
+            ];
+            </script>
+            `
+        };
+    }
+    
+    return { text: async () => '' };
+}
+
+// Función de búsqueda v9.0.0
 async function searchResults(keyword) {
     try {
         if (!keyword || !keyword.trim()) {
@@ -27,17 +77,11 @@ async function searchResults(keyword) {
             'dragon': ['C', 'D'],  // Dragon Ball está en C
             'naruto': ['N'],
             'one': ['O'],
-            'attack': ['A', 'S'],  // Attack on Titan puede estar como "Shingeki"
-            'demon': ['D', 'K'],   // Demon Slayer puede estar como "Kimetsu"
+            'attack': ['A', 'S'],
+            'demon': ['D', 'K'],
             'jujutsu': ['J'],
             'tokyo': ['T'],
-            'fate': ['F'],
-            'bleach': ['B'],
-            'death': ['D'],
-            'fullmetal': ['F'],
-            'hunter': ['H'],
-            'mob': ['M'],
-            'boku': ['B', 'M']     // My Hero Academia puede estar como "Boku no Hero"
+            'fate': ['F']
         };
         
         // Buscar páginas relevantes para la palabra clave
@@ -51,11 +95,6 @@ async function searchResults(keyword) {
                 }
                 break;
             }
-        }
-        
-        // Si no hay páginas específicas, buscar en las más comunes
-        if (searchPages.length === 0) {
-            searchPages.push(`${BASE_URL}/anime?alphabet=${firstLetter}`);
         }
 
         // Buscar en cada página
@@ -100,32 +139,6 @@ async function searchResults(keyword) {
                     }
                 }
                 
-                // Patrón 3: Buscar en cualquier parte del JSON
-                const broadPattern = new RegExp(`([^"]{0,50}${keywordLower}[^"]{0,50})`, 'gi');
-                const broadMatches = html.matchAll(broadPattern);
-                
-                for (const match of broadMatches) {
-                    const context = html.substring(Math.max(0, match.index - 100), match.index + 200);
-                    const slugMatch = context.match(/"([a-z0-9\-]+-[a-f0-9]{4})"/);
-                    
-                    if (slugMatch) {
-                        const slug = slugMatch[1];
-                        const title = slug.replace(/-[a-f0-9]{4}$/, '').replace(/-/g, ' ')
-                            .replace(/\b\w/g, l => l.toUpperCase());
-                        
-                        if (title.toLowerCase().includes(keywordLower)) {
-                            results.push({
-                                title: title,
-                                image: BASE_URL + "/favicon.ico",
-                                href: BASE_URL + "/" + slug
-                            });
-                        }
-                    }
-                }
-                
-                // Si ya encontramos suficientes resultados, parar
-                if (results.length >= 10) break;
-                
             } catch (pageError) {
                 console.log(`Error en ${searchUrl}: ${pageError.message}`);
                 continue;
@@ -148,44 +161,43 @@ async function searchResults(keyword) {
     }
 }
 
-/**
- * Extraer detalles del anime
- */
-async function extractDetails(url) {
-    try {
-        const response = await fetchv2(url);
-        const html = typeof response === 'object' ? await response.text() : await response;
+// Ejecutar pruebas
+async function runTests() {
+    console.log('🚀 PRUEBAS DEL MÓDULO v9.0.0 - MÚLTIPLES PÁGINAS\n');
+    console.log('=' .repeat(50));
+    
+    const tests = [
+        'naruto',
+        'dragon',
+        'one piece'
+    ];
+    
+    for (const keyword of tests) {
+        console.log(`\n🔍 Buscando: "${keyword}"`);
+        console.log('-'.repeat(30));
         
-        return JSON.stringify([{
-            description: "KickAssAnime - Watch anime online",
-            aliases: "Anime",
-            airdate: "2024"
-        }]);
-    } catch (error) {
-        return JSON.stringify([{
-            description: `Error: ${error.message}`,
-            aliases: "Error",
-            airdate: "2024"
-        }]);
+        const start = Date.now();
+        const results = await searchResults(keyword);
+        const time = Date.now() - start;
+        
+        const parsed = JSON.parse(results);
+        
+        console.log(`⚡ Tiempo: ${time}ms`);
+        console.log(`📊 Resultados: ${parsed.length}`);
+        
+        if (parsed.length > 0) {
+            console.log('✅ Animes encontrados:');
+            parsed.forEach((anime, index) => {
+                console.log(`   ${index + 1}. ${anime.title}`);
+                console.log(`      ${anime.href}`);
+            });
+        } else {
+            console.log('❌ Sin resultados');
+        }
     }
+    
+    console.log('\n' + '='.repeat(50));
+    console.log('🎉 PRUEBAS COMPLETADAS');
 }
 
-/**
- * Extraer lista de episodios
- */
-async function extractEpisodes(url) {
-    return JSON.stringify([{
-        title: "Episode 1",
-        href: url + "/ep-1"
-    }]);
-}
-
-/**
- * Extraer URL de streaming
- */
-async function extractStreamUrl(url) {
-    return JSON.stringify([{
-        streamUrl: "https://example.com/stream.m3u8",
-        quality: "1080p"
-    }]);
-}
+runTests();
