@@ -39,9 +39,9 @@ async function searchResults(keyword) {
             // Construir URL de imagen usando el poster real
             let imageUrl = "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg";
             if (item.poster && item.poster.hq) {
-                imageUrl = `https://kaa.to/image/${item.poster.hq}.webp`;
+                imageUrl = `https://kaa.to/image/poster/${item.poster.hq}.webp`;
             } else if (item.poster && item.poster.sm) {
-                imageUrl = `https://kaa.to/image/${item.poster.sm}.webp`;
+                imageUrl = `https://kaa.to/image/poster/${item.poster.sm}.webp`;
             }
             
             return {
