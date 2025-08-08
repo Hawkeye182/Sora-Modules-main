@@ -1,0 +1,13 @@
+{
+  "sourceName": "KaaTo DEBUG",
+  "iconUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
+  "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo_debug.js",
+  "author": "Hawkeye182",
+  "version": "1.0.0-debug",
+  "language": "subs",
+  "streamType": "anime",
+  "quality": "1080p",
+  "type": "scraper",
+  "baseUrl": "https://kaa.to",
+  "asyncJS": true
+}
