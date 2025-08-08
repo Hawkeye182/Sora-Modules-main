@@ -13,7 +13,7 @@
     "type": "anime",
     "baseUrl": "kaa.to",
     "searchBaseUrl": "https://kaa.to/search?q=%s",
-    "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/main/KickAssAnime/KickAssAnime.js",
+    "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KickAssAnime/KickAssAnime.js",
     "asyncJS": true,
     "streamAsyncJS": true,
     "softsub": false
