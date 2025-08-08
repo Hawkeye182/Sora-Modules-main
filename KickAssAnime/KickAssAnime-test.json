@@ -1,11 +1,11 @@
 {
-  "sourceName": "KickAssAnime Test",
+  "sourceName": "KickAssAnime Test Real",
   "author": {
     "name": "Tu Nombre",
     "icon": "https://avatars.githubusercontent.com/u/100000000?v=4"
   },
   "iconUrl": "https://kaa.to/favicon.ico",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "language": "Japanese (English Subtitles)",
   "baseUrl": "https://kaa.to/",
   "streamType": "HLS",
