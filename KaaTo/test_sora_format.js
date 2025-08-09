@@ -48,7 +48,101 @@ async function testSoraModule() {
         console.log('==================================\n');
 
         // Cargar el módulo corregido
-        const moduleCode = fs.readFileSync('e:/Proyectos/XD/Sora-Modules-main/KaaTo/subs/KaaTo_FIXED_SORA.js', 'utf8');
+        const { readFileSync } = require('fs');
+const path = require('path');
+
+// Simular el entorno de Sora 
+global.fetchv2 = async function(url, headers = {}, method = 'GET', body = null) {
+    console.log(`[SORA FETCH] ${method} ${url}`);
+    return {
+        status: 200,
+        _data: JSON.stringify([
+            {
+                title: "Test Anime",
+                slug: "test-anime-slug"
+            }
+        ])
+    };
+};
+
+// Cargar el módulo FIXED_SORA
+const moduleCode = readFileSync('e:/Proyectos/XD/Sora-Modules-main/KaaTo/subs/KaaTo_FIXED_SORA.js', 'utf8');
+eval(moduleCode);
+
+async function debugSoraFormat() {
+    console.log('🔍 DEBUGGING SORA MODULE FORMAT\n');
+    
+    try {
+        // Test 1: Verificar search
+        console.log('1️⃣ Testing searchResults...');
+        const searchResult = await searchResults('test');
+        console.log('Search output:', searchResult);
+        console.log('Search type:', typeof searchResult);
+        console.log('Is valid JSON:', isValidJSON(searchResult));
+        
+        // Test 2: Verificar details
+        console.log('\n2️⃣ Testing extractDetails...');
+        const detailsResult = await extractDetails('https://kaa.to/anime/test-slug');
+        console.log('Details output:', detailsResult);
+        console.log('Details type:', typeof detailsResult);
+        console.log('Is valid JSON:', isValidJSON(detailsResult));
+        
+        // Test 3: Verificar episodes
+        console.log('\n3️⃣ Testing extractEpisodes...');
+        const episodesResult = await extractEpisodes('https://kaa.to/anime/test-slug');
+        console.log('Episodes output:', episodesResult);
+        console.log('Episodes type:', typeof episodesResult);
+        console.log('Is valid JSON:', isValidJSON(episodesResult));
+        
+        // Test 4: Verificar stream (EL MÁS IMPORTANTE)
+        console.log('\n4️⃣ Testing extractStreamUrl...');
+        const streamResult = await extractStreamUrl('https://kaa.to/test-slug/ep-1-test');
+        console.log('Stream output:', streamResult);
+        console.log('Stream type:', typeof streamResult);
+        console.log('Is valid JSON:', isValidJSON(streamResult));
+        
+        if (isValidJSON(streamResult)) {
+            const stream = JSON.parse(streamResult);
+            console.log('\n📋 Stream Analysis:');
+            console.log('- streamUrl:', stream.streamUrl);
+            console.log('- quality:', stream.quality);
+            console.log('- type:', stream.type);
+            console.log('- headers:', stream.headers);
+            
+            // Verificar que todos los campos requeridos están presentes
+            const requiredFields = ['streamUrl', 'quality', 'type'];
+            const missingFields = requiredFields.filter(field => !stream[field]);
+            
+            if (missingFields.length > 0) {
+                console.log('❌ Missing required fields:', missingFields);
+            } else {
+                console.log('✅ All required fields present');
+            }
+            
+            // Verificar que streamUrl no esté vacía
+            if (!stream.streamUrl || stream.streamUrl.trim() === '') {
+                console.log('❌ streamUrl is empty or null');
+            } else {
+                console.log('✅ streamUrl has value');
+            }
+        }
+        
+    } catch (error) {
+        console.error('❌ Debug failed:', error.message);
+        console.error('Stack:', error.stack);
+    }
+}
+
+function isValidJSON(str) {
+    try {
+        JSON.parse(str);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+debugSoraFormat();
         eval(moduleCode);
 
         // Test 1: Búsqueda

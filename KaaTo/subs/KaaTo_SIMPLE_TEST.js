@@ -75,17 +75,15 @@ async function extractStreamUrl(url) {
         return JSON.stringify({
             streamUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
             quality: "720p",
-            type: "mp4",
-            headers: {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-            }
+            type: "hls", // Cambiar a HLS porque JSON dice streamType: "HLS"
+            headers: {}   // Headers vacíos para evitar problemas
         });
         
     } catch (error) {
         return JSON.stringify({
             streamUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
             quality: "ERROR",
-            type: "mp4",
+            type: "hls",
             headers: {}
         });
     }
