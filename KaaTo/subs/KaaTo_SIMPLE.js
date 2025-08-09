@@ -1,5 +1,4 @@
-// KaaTo Hybrid - Búsquedas/detalles originales + streams alternativos
-// Search (CORREGIDO - Retorna array directamente)
+// KaaTo Simple - Copia exacta del módulo que funciona, pero con streams demo
 async function searchResults(keyword) {
     try {
         const response = await fetchv2('https://kaa.to/api/search', {
@@ -16,7 +15,6 @@ async function searchResults(keyword) {
                 data = JSON.parse(data);
             }
             
-            // Retornar array directamente, NO JSON.stringify
             if (Array.isArray(data)) {
                 const results = data.map(item => ({
                     title: item.title || 'Unknown Title',
@@ -25,21 +23,18 @@ async function searchResults(keyword) {
                     href: `https://kaa.to/anime/${item.slug}`
                 }));
                 
-                console.log('Search results:', results.length);
-                return results;  // ✅ Objeto directo
+                return JSON.stringify(results);
             } else {
-                return [];
+                return JSON.stringify([]);
             }
         } else {
-            return [];
+            return JSON.stringify([]);
         }
     } catch (error) {
-        console.log('Search error: ' + error.message);
-        return [];
+        return JSON.stringify([]);
     }
 }
 
-// Details (CORREGIDO - Retorna objeto directamente)
 async function extractDetails(url) {
     try {
         const slug = url.split('/').pop();
@@ -51,7 +46,7 @@ async function extractDetails(url) {
                 data = JSON.parse(data);
             }
             
-            const details = {
+            return JSON.stringify({
                 title: data.title || 'Unknown Title',
                 summary: data.description || 'No description available',
                 alternative: data.titles ? data.titles.join('; ') : '',
@@ -60,28 +55,21 @@ async function extractDetails(url) {
                 genre: data.genres ? data.genres.join(', ') : '',
                 image: data.poster && data.poster.hq ? 
                        `https://kaa.to/image/poster/${data.poster.hq}.webp` : ''
-            };
-            
-            console.log('Details extracted:', details.title);
-            return details;  // ✅ Objeto directo
+            });
         } else {
-            return {};
+            return JSON.stringify({});
         }
     } catch (error) {
-        console.log('Details error: ' + error.message);
-        return {};
+        return JSON.stringify({});
     }
 }
 
-// Episodes (CORREGIDO - Retorna array directamente)
 async function extractEpisodes(url) {
     try {
         const slug = url.split('/').pop();
         let allEpisodes = [];
         let currentPage = 1;
         let hasMorePages = true;
-        
-        console.log('Extracting episodes for:', slug);
         
         while (hasMorePages && currentPage <= 20) {
             const response = await fetchv2(`https://kaa.to/api/show/${slug}/episodes?page=${currentPage}`);
@@ -99,9 +87,7 @@ async function extractEpisodes(url) {
                     }));
                     
                     allEpisodes = allEpisodes.concat(episodes);
-                    console.log(`Page ${currentPage}: ${episodes.length} episodes`);
                     
-                    // Verificar si hay más páginas
                     if (currentPage >= data.pages.total) {
                         hasMorePages = false;
                     } else {
@@ -114,62 +100,16 @@ async function extractEpisodes(url) {
                 hasMorePages = false;
             }
             
-            // Pequeña pausa para evitar rate limiting
             await new Promise(resolve => setTimeout(resolve, 100));
         }
         
-        console.log('Total episodes found:', allEpisodes.length);
-        return allEpisodes;  // ✅ Array directo
+        return JSON.stringify(allEpisodes);
     } catch (error) {
-        console.log('Episodes error: ' + error.message);
-        return [];
+        return JSON.stringify([]);
     }
 }
 
-// Stream extraction (ALTERNATIVO - SIN CLOUDFLARE)
 async function extractStreamUrl(episodeUrl) {
-    console.log('🎬 HYBRID STREAM EXTRACTION (No Cloudflare)');
-    console.log('Episode URL:', episodeUrl);
-    
-    try {
-        // Extraer el ID del episodio de la URL
-        const episodeIdMatch = episodeUrl.match(/\/episode\/([a-f0-9]{24})/);
-        
-        if (episodeIdMatch) {
-            const episodeId = episodeIdMatch[1];
-            console.log('Episode ID found:', episodeId);
-            
-            // En lugar de acceder a Cloudflare, usar streams demo funcionales
-            // Crear variedad basada en el episodeId para que no sea siempre el mismo
-            const streamOptions = [
-                "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8",
-                "https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8",
-                "https://multiplatform-f.akamaihd.net/i/multi/will/bunny/big_buck_bunny_,640x360_400,640x360_700,640x360_1000,950x540_1500,.mp4.csmil/master.m3u8",
-                "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8"
-            ];
-            
-            // Usar hash simple del episodeId para seleccionar stream
-            let hash = 0;
-            for (let i = 0; i < episodeId.length; i++) {
-                const char = episodeId.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash = hash & hash; // Convert to 32bit integer
-            }
-            
-            const streamIndex = Math.abs(hash) % streamOptions.length;
-            const selectedStream = streamOptions[streamIndex];
-            
-            console.log('✅ Selected demo stream:', selectedStream);
-            console.log('🎯 This avoids Cloudflare completely!');
-            
-            return selectedStream;
-        } else {
-            console.log('⚠️ Could not extract episode ID, using default stream');
-            return "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8";
-        }
-        
-    } catch (error) {
-        console.log('❌ Stream extraction error:', error.message);
-        return "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8";
-    }
+    // SIMPLE: Solo retornar un M3U8 demo que sabemos que funciona
+    return "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8";
 }
