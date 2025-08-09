@@ -1,4 +1,4 @@
-// KaaTo Perfect Extension v10.3 - Advanced Diagnostic System
+// KaaTo Perfect Extension v10.5 - URL Revert + Diagnostics
 // Search - Del original que funciona
 async function searchResults(keyword) {
     try {
@@ -142,8 +142,9 @@ async function extractEpisodes(url) {
                             page.eps.forEach(epNum => {
                                 // Buscar el slug correspondiente en los resultados actuales
                                 const episodeData = episodesData.result.find(ep => ep.episode_number === epNum);
-                                const episodeSlug = episodeData ? episodeData.slug : `ep-${epNum}`;
+                                const episodeSlug = episodeData ? episodeData.slug : `missing-${epNum}`;
                                 
+                                // FORMATO CORRECTO: https://kaa.to/{show_slug}/ep-{episode_number}-{episode_slug}
                                 allEpisodes.push({
                                     href: `https://kaa.to/${slug}/ep-${epNum}-${episodeSlug}`,
                                     number: epNum
@@ -156,6 +157,7 @@ async function extractEpisodes(url) {
                 } else {
                     // Estrategia 2: Usar solo los episodios de la primera página
                     episodesData.result.forEach(episode => {
+                        // FORMATO CORRECTO: https://kaa.to/{show_slug}/ep-{episode_number}-{episode_slug}
                         allEpisodes.push({
                             href: `https://kaa.to/${slug}/ep-${episode.episode_number}-${episode.slug}`,
                             number: episode.episode_number
@@ -188,7 +190,9 @@ async function extractEpisodes(url) {
 
 // Stream - Estrategia actualizada sin window.KAA
 async function extractStreamUrl(episodeUrl) {
-    console.log('Extracting stream from URL: ' + episodeUrl);
+    console.log('🎬 [v10.5 DEBUGGING] Extracting stream from URL: ' + episodeUrl);
+    console.log('✅ Using correct URL format - if you see this log, extractStreamUrl IS working!');
+    console.log('🔍 Now debugging why stream extraction fails...');
     
     try {
         // Estrategia 1: Intentar obtener la página del episodio con headers realistas
