@@ -1,5 +1,5 @@
 {
-    "sourceName": "KaaTo Hybrid",
+    "sourceName": "KaaTo Fixed v6",
     "iconUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/logo.png",
     "author": {
         "name": "Hawkeye182",
@@ -15,7 +15,7 @@
     "baseUrl": "https://kaa.to/",
     "searchBaseUrl": "https://kaa.to/api/search",
     "searchUrl": "https://kaa.to/search?query=%s",
-    "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo_HYBRID.js?v=6.0.0",
+    "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo_FIXED_V6.js?v=6.0.0",
     "asyncJS": true,
     "streamAsyncJS": true,
     "softsub": true
