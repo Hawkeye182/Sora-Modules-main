@@ -1,0 +1,21 @@
+{
+    "sourceName": "KaaTo Universal v11.5.9 - ENHANCED STREAM EXTRACTION",
+    "iconUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/logo.png",
+    "author": {
+        "name": "Hawkeye182",
+        "icon": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
+        "url": "https://github.com/Hawkeye182/Sora-Modules-main"
+    },
+    "version": "11.5.9",
+    "language": "subs",
+    "streamType": "HLS",
+    "quality": "1080p",
+    "type": "anime",
+    "downloadSupport": true,
+    "baseUrl": "https://kaa.to/",
+    "searchBaseUrl": "https://kaa.to/api/search",
+    "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo_UNIVERSAL_FIXED_v11_5_9.js?v=11.5.9&cache=false",
+    "asyncJS": true,
+    "streamAsyncJS": true,
+    "softsub": true
+}
