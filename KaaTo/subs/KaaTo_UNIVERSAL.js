@@ -52,26 +52,18 @@ async function extractDetails(url) {
                 details = JSON.parse(details);
             }
             
-            return JSON.stringify([{
-                description: details.description || "No description available",
-                aliases: details.alternative_names ? details.alternative_names.join(', ') : "",
-                airdate: details.aired_from || ""
-            }]);
+            const result = {
+                description: details.synopsis || details.description || "Sin descripción disponible",
+                aliases: [details.title_en, details.title_original].filter(title => title && title !== details.title).join(', ') || '',
+                airdate: details.year ? `Año: ${details.year}` : 'Aired: Unknown'
+            };
+            
+            return JSON.stringify([result]);
         }
         
-        return JSON.stringify([{
-            description: "No description available",
-            aliases: "",
-            airdate: ""
-        }]);
-        
+        return JSON.stringify([{description: "Error obteniendo detalles", aliases: "", airdate: "Aired: Unknown"}]);
     } catch (error) {
-        console.log('❌ [v11.0] Details error:', error.message);
-        return JSON.stringify([{
-            description: "Error loading details",
-            aliases: "",
-            airdate: ""
-        }]);
+        return JSON.stringify([{description: 'Error: ' + error.message, aliases: '', airdate: 'Aired: Unknown'}]);
     }
 }
 
@@ -227,7 +219,11 @@ async function extractStreamUrl(input) {
         }
         
         console.log('🔍 Analyzing HTML for streams...');
-        console.log('📄 HTML preview:', html.substring(0, 300));
+        console.log('📄 HTML preview (first 500 chars):', html.substring(0, 500));
+        console.log('📄 HTML preview (middle 500 chars):', html.substring(Math.floor(html.length/2), Math.floor(html.length/2) + 500));
+        console.log('📄 HTML contains script tags:', html.includes('<script>'));
+        console.log('📄 HTML contains video tags:', html.includes('<video'));
+        console.log('📄 HTML contains m3u8:', html.includes('m3u8'));
         
         // PATTERN 1: Direct M3U8 URLs in HTML
         const m3u8Pattern = /https?:\/\/[^\s"'<>]+\.m3u8/gi;
@@ -239,7 +235,7 @@ async function extractStreamUrl(input) {
             return m3u8Urls[0];
         }
         
-        // PATTERN 2: Video IDs for M3U8 construction
+        // PATTERN 2: Video IDs for M3U8 construction - More specific patterns
         const videoIdPattern = /[a-f0-9]{24}/g;
         const videoIds = html.match(videoIdPattern);
         
@@ -251,7 +247,20 @@ async function extractStreamUrl(input) {
             return m3u8Url;
         }
         
-        // PATTERN 3: Look for other video patterns
+        // PATTERN 3: Look for KaaTo-specific patterns
+        const kaatoPattern = /video[_-]?id['":\s]*['"]?([a-f0-9]{24})/gi;
+        const kaatoMatches = html.match(kaatoPattern);
+        
+        if (kaatoMatches && kaatoMatches.length > 0) {
+            console.log('🎯 FOUND KAATO PATTERNS:', kaatoMatches);
+            const videoId = kaatoMatches[0].match(/[a-f0-9]{24}/)[0];
+            const m3u8Url = `https://krussdomi.com/m3u8/${videoId}.m3u8`;
+            console.log('🔨 CONSTRUCTED FROM KAATO PATTERN:', m3u8Url);
+            console.log('🚀 RETURNING KAATO STREAM:', m3u8Url);
+            return m3u8Url;
+        }
+        
+        // PATTERN 4: Look for other video patterns
         const mp4Pattern = /https?:\/\/[^\s"'<>]+\.mp4/gi;
         const mp4Urls = html.match(mp4Pattern);
         
@@ -261,10 +270,30 @@ async function extractStreamUrl(input) {
             return mp4Urls[0];
         }
         
+        // PATTERN 5: Debug all potential video-related content
+        console.log('🔍 DEBUGGING - Looking for any video-related patterns...');
+        const allVideoPatterns = [
+            /video/gi,
+            /stream/gi,
+            /m3u8/gi,
+            /mp4/gi,
+            /\.m3u8/gi,
+            /krussdomi/gi,
+            /embed/gi
+        ];
+        
+        allVideoPatterns.forEach((pattern, index) => {
+            const matches = html.match(pattern);
+            if (matches) {
+                console.log(`🔍 Pattern ${index + 1} (${pattern}) found ${matches.length} matches:`, matches.slice(0, 5));
+            }
+        });
+        
         console.log('❌ NO STREAMS FOUND - Returning demo video');
         console.log('🔍 Search patterns failed:');
         console.log('  - M3U8 URLs: None found');
-        console.log('  - Video IDs: None found');
+        console.log('  - Video IDs: None found'); 
+        console.log('  - KaaTo patterns: None found');
         console.log('  - MP4 URLs: None found');
         
     } catch (error) {
