@@ -186,12 +186,12 @@ async function extractEpisodes(url) {
     }
 }
 
-// Stream - Intentar bypass de Cloudflare con múltiples estrategias
+// Stream - Estrategia actualizada sin window.KAA
 async function extractStreamUrl(episodeUrl) {
     console.log('Extracting stream from URL: ' + episodeUrl);
     
     try {
-        // Estrategia 1: Intentar obtener la página del episodio con headers anti-Cloudflare
+        // Estrategia 1: Intentar obtener la página del episodio con headers realistas
         const pageResponse = await fetchv2(episodeUrl, {
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.9',
@@ -213,86 +213,131 @@ async function extractStreamUrl(episodeUrl) {
         
         if (pageResponse && pageResponse.status === 200 && pageResponse._data) {
             console.log('✅ Successfully loaded episode page');
-            
-            // Buscar window.KAA en el HTML
             const html = pageResponse._data;
-            const kaaMatch = html.match(/window\.KAA\s*=\s*({.*?});/s);
             
-            if (kaaMatch) {
-                console.log('✅ Found window.KAA data');
+            // Estrategia 2: Buscar diferentes patrones de datos del servidor
+            const patterns = [
+                /window\.KAA\s*=\s*({.*?});/s,
+                /window\._kaa\s*=\s*({.*?});/s,
+                /var\s+servers\s*=\s*({.*?});/s,
+                /const\s+servers\s*=\s*({.*?});/s,
+                /"servers":\s*(\[.*?\])/s,
+                /data-servers=["']({.*?})["']/s,
+                /servers:\s*(\[.*?\])/s
+            ];
+            
+            let serverData = null;
+            let foundPattern = null;
+            
+            for (const pattern of patterns) {
+                const match = html.match(pattern);
+                if (match) {
+                    try {
+                        serverData = JSON.parse(match[1]);
+                        foundPattern = pattern;
+                        console.log('✅ Found server data with pattern:', pattern.source);
+                        break;
+                    } catch (e) {
+                        console.log('❌ Failed to parse match from pattern:', pattern.source);
+                    }
+                }
+            }
+            
+            if (serverData) {
+                console.log('Server data found:', serverData);
                 
-                try {
-                    const kaaData = JSON.parse(kaaMatch[1]);
-                    console.log('KAA servers found:', kaaData.servers ? kaaData.servers.length : 0);
+                // Estrategia 3: Extraer URLs de streaming
+                let streamUrls = [];
+                
+                // Si serverData tiene la estructura de KAA
+                if (serverData.servers && Array.isArray(serverData.servers)) {
+                    streamUrls = serverData.servers;
+                } 
+                // Si serverData es directamente un array
+                else if (Array.isArray(serverData)) {
+                    streamUrls = serverData;
+                }
+                // Si hay un campo específico para streams
+                else if (serverData.streams || serverData.sources) {
+                    streamUrls = serverData.streams || serverData.sources;
+                }
+                
+                if (streamUrls.length > 0) {
+                    console.log(`Found ${streamUrls.length} potential streams`);
                     
-                    if (kaaData.servers && kaaData.servers.length > 0) {
-                        // Intentar con el primer servidor disponible
-                        const firstServer = kaaData.servers[0];
-                        console.log('Trying first server:', firstServer);
-                        
-                        // Extraer video ID del servidor
-                        const videoIdMatch = firstServer.match(/\/([a-f0-9]{24})$/);
-                        
-                        if (videoIdMatch) {
-                            const videoId = videoIdMatch[1];
-                            console.log('Video ID extracted:', videoId);
+                    // Intentar cada URL encontrada
+                    for (const streamUrl of streamUrls) {
+                        try {
+                            console.log('Testing stream URL:', streamUrl);
                             
-                            // Estrategia 2: Intentar diferentes dominios de krussdomi
-                            const kruDomains = [
-                                'krussdomi.com',
-                                'www.krussdomi.com',
-                                'cdn.krussdomi.com',
-                                'stream.krussdomi.com'
-                            ];
-                            
-                            for (const domain of kruDomains) {
-                                const m3u8Url = `https://${domain}/m3u8/${videoId}.m3u8`;
-                                console.log(`Trying domain: ${domain}`);
+                            // Si la URL contiene un video ID, intentar extraer M3U8
+                            const videoIdMatch = streamUrl.match(/\/([a-f0-9]{24})/);
+                            if (videoIdMatch) {
+                                const videoId = videoIdMatch[1];
+                                const m3u8Url = `https://krussdomi.com/m3u8/${videoId}.m3u8`;
                                 
-                                try {
-                                    const testResponse = await fetchv2(m3u8Url, {
-                                        'Accept': 'application/vnd.apple.mpegurl, application/x-mpegurl, */*',
-                                        'Accept-Language': 'en-US,en;q=0.9',
-                                        'Cache-Control': 'no-cache',
-                                        'Origin': 'https://kaa.to',
-                                        'Referer': 'https://kaa.to/',
-                                        'Sec-Fetch-Dest': 'empty',
-                                        'Sec-Fetch-Mode': 'cors',
-                                        'Sec-Fetch-Site': 'cross-site',
-                                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                                    });
-                                    
-                                    if (testResponse && testResponse.status === 200 && testResponse._data && testResponse._data.includes('#EXTM3U')) {
-                                        console.log(`✅ SUCCESS! Working M3U8 found on ${domain}`);
-                                        return m3u8Url;
-                                    }
-                                } catch (domainError) {
-                                    console.log(`❌ Domain ${domain} failed:`, domainError.message);
+                                const m3u8Response = await fetchv2(m3u8Url, {
+                                    'Accept': 'application/vnd.apple.mpegurl, application/x-mpegurl, */*',
+                                    'Origin': 'https://kaa.to',
+                                    'Referer': 'https://kaa.to/',
+                                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                                });
+                                
+                                if (m3u8Response && m3u8Response.status === 200 && m3u8Response._data && m3u8Response._data.includes('#EXTM3U')) {
+                                    console.log('✅ SUCCESS! Working M3U8 found:', m3u8Url);
+                                    return m3u8Url;
                                 }
                             }
                             
-                            // Estrategia 3: Intentar el servidor directo sin M3U8
-                            console.log('🔄 Trying direct server URL as fallback');
-                            return firstServer;
+                            // Si no es M3U8, probar la URL directamente
+                            if (streamUrl.includes('.m3u8') || streamUrl.includes('.mp4')) {
+                                console.log('✅ Returning direct stream URL:', streamUrl);
+                                return streamUrl;
+                            }
+                            
+                        } catch (streamError) {
+                            console.log('❌ Stream URL failed:', streamError.message);
                         }
                     }
-                } catch (parseError) {
-                    console.log('❌ Error parsing KAA data:', parseError.message);
                 }
-            } else {
-                console.log('❌ No window.KAA found in page HTML');
             }
+            
+            // Estrategia 4: Buscar patrones de URL directamente en el HTML
+            const urlPatterns = [
+                /https:\/\/krussdomi\.com\/m3u8\/[a-f0-9]{24}\.m3u8/g,
+                /https:\/\/[^"'<>\s]+\.m3u8/g,
+                /https:\/\/[^"'<>\s]+\.mp4/g
+            ];
+            
+            for (const urlPattern of urlPatterns) {
+                const matches = html.match(urlPattern);
+                if (matches && matches.length > 0) {
+                    console.log(`Found ${matches.length} potential URLs with pattern`);
+                    
+                    for (const foundUrl of matches) {
+                        try {
+                            const testResponse = await fetchv2(foundUrl, {
+                                'Accept': 'application/vnd.apple.mpegurl, application/x-mpegurl, */*',
+                                'Origin': 'https://kaa.to',
+                                'Referer': 'https://kaa.to/'
+                            });
+                            
+                            if (testResponse && testResponse.status === 200) {
+                                console.log('✅ SUCCESS! Working stream found:', foundUrl);
+                                return foundUrl;
+                            }
+                        } catch (e) {
+                            console.log('❌ URL test failed:', foundUrl);
+                        }
+                    }
+                }
+            }
+            
         } else {
             console.log('❌ Failed to load episode page. Status:', pageResponse ? pageResponse.status : 'null');
-            
-            if (pageResponse && pageResponse.status === 403) {
-                console.log('🚫 Cloudflare blocked the request (403)');
-            } else if (pageResponse && pageResponse.status === 503) {
-                console.log('🚫 Service unavailable (503) - likely Cloudflare protection');
-            }
         }
         
-        // Fallback final: usar video demo si todo falla
+        // Fallback: usar video demo rotativo basado en el episodio
         console.log('🔄 All strategies failed, using demo video');
         const episodeMatch = episodeUrl.match(/ep-(\d+)/);
         const episodeNumber = episodeMatch ? parseInt(episodeMatch[1]) : 1;
