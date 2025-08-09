@@ -1,35 +1,51 @@
-// KaaTo Universal v11.6 - CLEAN REBUILD FROM WORKING PERFECT
+// KaaTo Universal v11.7 - LOG DISPLAY IN SEARCH
+// Global variable to store logs for display
+let debugLogs = [];
+
+function addDebugLog(message) {
+    const timestamp = new Date().toISOString().substr(11, 8);
+    const logEntry = `[${timestamp}] ${message}`;
+    debugLogs.push(logEntry);
+    console.log(logEntry);
+    
+    // Keep only last 10 logs to avoid memory issues
+    if (debugLogs.length > 10) {
+        debugLogs.shift();
+    }
+}
+
 // Intercept functions to debug which method Sora actually calls
-console.log('🚨🚨🚨 [UNIVERSAL DEBUG] MODULE LOADED AT:', new Date().toISOString());
-console.log('🎯 [DEBUG] ALL INTERCEPT FUNCTIONS LOADED - Ready to catch ANY call!');
+addDebugLog('🚨🚨🚨 [UNIVERSAL DEBUG] MODULE LOADED');
+addDebugLog('🎯 [DEBUG] ALL INTERCEPT FUNCTIONS LOADED - Ready to catch ANY call!');
 
 async function getStreamUrl(input) {
-    console.log('📺 [INTERCEPT-getStreamUrl] Método detectado: getStreamUrl');
-    console.log('🎯 Input recibido:', typeof input, input);
+    addDebugLog('📺 [INTERCEPT-getStreamUrl] Método detectado: getStreamUrl');
+    addDebugLog(`🎯 Input recibido: ${typeof input} ${input}`);
     return await extractStreamUrl(input);
 }
 
 async function fetchStream(input) {
-    console.log('📺 [INTERCEPT-fetchStream] Método detectado: fetchStream');
-    console.log('🎯 Input recibido:', typeof input, input);
+    addDebugLog('📺 [INTERCEPT-fetchStream] Método detectado: fetchStream');
+    addDebugLog(`🎯 Input recibido: ${typeof input} ${input}`);
     return await extractStreamUrl(input);
 }
 
 async function streamUrl(input) {
-    console.log('📺 [INTERCEPT-streamUrl] Método detectado: streamUrl');
-    console.log('🎯 Input recibido:', typeof input, input);
+    addDebugLog('📺 [INTERCEPT-streamUrl] Método detectado: streamUrl');
+    addDebugLog(`🎯 Input recibido: ${typeof input} ${input}`);
     return await extractStreamUrl(input);
 }
 
 async function getStream(input) {
-    console.log('📺 [INTERCEPT-getStream] Método detectado: getStream');
-    console.log('🎯 Input recibido:', typeof input, input);
+    addDebugLog('📺 [INTERCEPT-getStream] Método detectado: getStream');
+    addDebugLog(`🎯 Input recibido: ${typeof input} ${input}`);
     return await extractStreamUrl(input);
 }
 
-// Search - Working from PERFECT
+// Search - Working from PERFECT + LOG DISPLAY
 async function searchResults(keyword) {
-    console.log('🔍 [v11.6] searchResults CALLED with keyword:', keyword);
+    addDebugLog(`🔍 [v11.7] searchResults CALLED with keyword: ${keyword}`);
+    
     try {
         const response = await fetchv2('https://kaa.to/api/search', {
             'Content-Type': 'application/json',
@@ -53,6 +69,15 @@ async function searchResults(keyword) {
                     href: `https://kaa.to/anime/${item.slug}`
                 }));
                 
+                // ADD DEBUG LOG DISPLAY ITEM
+                if (debugLogs.length > 0) {
+                    results.unshift({
+                        title: "🔍 DEBUG LOGS - KaaTo Universal v11.7",
+                        image: "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
+                        href: `DEBUG_LOGS: ${debugLogs.join(' | ')}`
+                    });
+                }
+                
                 return JSON.stringify(results);
             } else {
                 return JSON.stringify([]);
@@ -61,6 +86,7 @@ async function searchResults(keyword) {
             return JSON.stringify([]);
         }
     } catch (error) {
+        addDebugLog(`❌ Search error: ${error.message}`);
         return JSON.stringify([]);
     }
 }
@@ -203,43 +229,39 @@ async function extractEpisodes(url) {
     }
 }
 
-// Stream - MAIN FUNCTION with detailed input logging
+// Stream - MAIN FUNCTION with visible debug logs
 async function extractStreamUrl(episodeUrl) {
-    console.log('🚨🚨🚨 [v11.6 CLEAN REBUILD] 🚨🚨🚨');
-    console.log('⚡ extractStreamUrl CALLED AT:', new Date().toISOString());
-    console.log('📍 Episode URL received:', episodeUrl);
-    console.log('📍 Input type:', typeof episodeUrl);
-    console.log('📍 Input value (JSON):', JSON.stringify(episodeUrl));
-    console.log('📍 Input length:', episodeUrl ? episodeUrl.length : 'NULL');
-    console.log('📍 Input is null?', episodeUrl === null);
-    console.log('📍 Input is undefined?', episodeUrl === undefined);
-    console.log('📍 Input is empty string?', episodeUrl === '');
-    console.log('🔥 CLEAN VERSION - SHOULD WORK! 🔥');
+    addDebugLog('🚨🚨🚨 [v11.7 VISIBLE LOGS] extractStreamUrl CALLED!');
+    addDebugLog(`📍 Episode URL: ${episodeUrl}`);
+    addDebugLog(`📍 Input type: ${typeof episodeUrl}`);
+    addDebugLog(`📍 Input null? ${episodeUrl === null}`);
+    addDebugLog(`📍 Input undefined? ${episodeUrl === undefined}`);
+    addDebugLog(`📍 Input empty? ${episodeUrl === ''}`);
     
     try {
         // Handle null/undefined input
         if (!episodeUrl || episodeUrl === null || episodeUrl === undefined || episodeUrl === '') {
-            console.log('❌ Input is null/empty - using fallback');
+            addDebugLog('❌ Input is null/empty - using fallback');
             episodeUrl = 'https://kaa.to/bleach-f24c/ep-1-23d99b'; // Default for testing
-            console.log('🔧 Using fallback URL:', episodeUrl);
+            addDebugLog(`🔧 Using fallback URL: ${episodeUrl}`);
         }
         
-        console.log('🌐 Making fetch request to:', episodeUrl);
+        addDebugLog(`🌐 Making fetch request to: ${episodeUrl.substring(0, 50)}...`);
         
         // Simple fetch like AnimeFLV - NO complex headers
         const response = await fetch(episodeUrl);
         const html = await response.text();
         
-        console.log('✅ HTML received, length:', html.length);
-        console.log('🔍 HTML preview (first 300 chars):', html.substring(0, 300));
+        addDebugLog(`✅ HTML received, length: ${html.length}`);
+        addDebugLog(`🔍 HTML preview: ${html.substring(0, 100)}...`);
         
         // Simple pattern search for m3u8 URLs
         const m3u8Pattern = /https?:\/\/[^\s"'<>]+\.m3u8/gi;
         const m3u8Urls = html.match(m3u8Pattern);
         
         if (m3u8Urls && m3u8Urls.length > 0) {
-            console.log('🎯 Found M3U8 URLs:', m3u8Urls);
-            console.log('🚀 RETURNING STREAM:', m3u8Urls[0]);
+            addDebugLog(`🎯 Found M3U8 URLs: ${m3u8Urls.length} found`);
+            addDebugLog(`🚀 RETURNING STREAM: ${m3u8Urls[0]}`);
             return m3u8Urls[0]; // Return first one
         }
         
@@ -248,10 +270,10 @@ async function extractStreamUrl(episodeUrl) {
         const videoIds = html.match(videoIdPattern);
         
         if (videoIds && videoIds.length > 0) {
-            console.log('🎯 Found video IDs:', videoIds);
+            addDebugLog(`🎯 Found video IDs: ${videoIds.length} found`);
             const m3u8Url = `https://krussdomi.com/m3u8/${videoIds[0]}.m3u8`;
-            console.log('🔨 Generated M3U8 URL:', m3u8Url);
-            console.log('🚀 RETURNING CONSTRUCTED STREAM:', m3u8Url);
+            addDebugLog(`🔨 Generated M3U8 URL: ${m3u8Url}`);
+            addDebugLog(`🚀 RETURNING CONSTRUCTED STREAM: ${m3u8Url}`);
             return m3u8Url;
         }
         
@@ -260,22 +282,18 @@ async function extractStreamUrl(episodeUrl) {
         const videoUrls = html.match(videoPattern);
         
         if (videoUrls && videoUrls.length > 0) {
-            console.log('🎯 Found video URLs:', videoUrls);
-            console.log('🚀 RETURNING VIDEO STREAM:', videoUrls[0]);
+            addDebugLog(`🎯 Found video URLs: ${videoUrls.length} found`);
+            addDebugLog(`🚀 RETURNING VIDEO STREAM: ${videoUrls[0]}`);
             return videoUrls[0];
         }
         
-        console.log('❌ No streams found in HTML');
-        console.log('🔍 HTML search patterns failed:');
-        console.log('  - M3U8 URLs: Not found');
-        console.log('  - Video IDs: Not found');
-        console.log('  - Video URLs: Not found');
+        addDebugLog('❌ No streams found in HTML');
+        addDebugLog('🔍 Search patterns all failed');
         
     } catch (error) {
-        console.log('❌ Error in extractStreamUrl:', error.message);
-        console.log('📋 Error stack:', error.stack);
+        addDebugLog(`❌ Error in extractStreamUrl: ${error.message}`);
     }
     
-    console.log('🔄 Returning fallback demo video');
+    addDebugLog('🔄 Returning fallback demo video');
     return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 }

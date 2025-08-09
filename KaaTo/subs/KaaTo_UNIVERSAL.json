@@ -1,12 +1,12 @@
 {
-    "sourceName": "KaaTo Universal v11.6 - CLEAN REBUILD",
+    "sourceName": "KaaTo Universal v11.7 - VISIBLE LOGS",
     "iconUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/logo.png",
     "author": {
         "name": "Hawkeye182",
         "icon": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
         "url": "https://github.com/Hawkeye182/Sora-Modules-main"
     },
-    "version": "11.6.0",
+    "version": "11.7.0",
     "language": "subs",
     "streamType": "HLS",
     "quality": "1080p",
