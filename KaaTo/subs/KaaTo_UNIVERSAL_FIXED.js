@@ -256,16 +256,71 @@ async function extractStreamUrl(input) {
             return m3u8Urls[0]; // RETURN STRING DIRECTLY
         }
         
-        // PATTERN 2: Video IDs - NUEVA ARQUITECTURA DESCUBIERTA
+        // PATTERN 1.5: Buscar API source patterns (de los descubrimientos F12)
+        const sourcePattern = /source\.php\?id=([a-f0-9]{24})/gi;
+        const sourceMatches = html.match(sourcePattern);
+        
+        if (sourceMatches) {
+            console.log('🎯 FOUND SOURCE API PATTERNS:', sourceMatches);
+            const videoId = sourceMatches[0].match(/[a-f0-9]{24}/)[0];
+            console.log('🎮 EXTRACTED VIDEO ID FROM SOURCE API:', videoId);
+            
+            // Construir URL con nueva arquitectura
+            const newM3u8Url = `https://hls.krussdomi.com/manifest/${videoId}/master.m3u8`;
+            console.log('🔨 CONSTRUCTED FROM SOURCE API:', newM3u8Url);
+            console.log('🚀 RETURNING SOURCE API STREAM (STRING):', newM3u8Url);
+            return newM3u8Url; // RETURN STRING DIRECTLY
+        }
+        
+        // PATTERN 2: Video IDs - NUEVA ARQUITECTURA DESCUBIERTA + MEJOR SELECCIÓN
         const videoIdPattern = /[a-f0-9]{24}/g;
         const videoIds = html.match(videoIdPattern);
         
         if (videoIds && videoIds.length > 0) {
             console.log('🎯 FOUND VIDEO IDs:', videoIds);
-            const videoId = videoIds[0];
+            
+            // MEJORAR SELECCIÓN: Buscar el Video ID más probable para el stream
+            let selectedVideoId = null;
+            
+            // 1. Buscar en contexto de video/player
+            const playerPattern = /(?:player|video|stream|source)[^{]*['":]([a-f0-9]{24})/gi;
+            const playerMatches = html.match(playerPattern);
+            if (playerMatches) {
+                const playerId = playerMatches[0].match(/[a-f0-9]{24}/)[0];
+                console.log('🎮 FOUND PLAYER VIDEO ID:', playerId);
+                selectedVideoId = playerId;
+            }
+            
+            // 2. Si no encuentra en player, buscar patrón de ID diferente a thumbnails
+            if (!selectedVideoId) {
+                // Los thumbnails suelen aparecer múltiples veces, el video ID real aparece menos
+                const idCounts = {};
+                videoIds.forEach(id => {
+                    idCounts[id] = (idCounts[id] || 0) + 1;
+                });
+                
+                // Tomar el ID que aparece menos veces (probablemente el video real)
+                const sortedIds = Object.keys(idCounts).sort((a, b) => idCounts[a] - idCounts[b]);
+                console.log('📊 VIDEO ID FREQUENCY:', idCounts);
+                
+                // Preferir IDs que aparecen 1-2 veces sobre los que aparecen muchas veces
+                for (const id of sortedIds) {
+                    if (idCounts[id] <= 2) {
+                        selectedVideoId = id;
+                        console.log('🎯 SELECTED VIDEO ID BY FREQUENCY:', selectedVideoId, 'count:', idCounts[id]);
+                        break;
+                    }
+                }
+            }
+            
+            // 3. Fallback: usar el último ID encontrado (suele ser el más relevante)
+            if (!selectedVideoId) {
+                selectedVideoId = videoIds[videoIds.length - 1];
+                console.log('🔄 FALLBACK TO LAST VIDEO ID:', selectedVideoId);
+            }
             
             // NUEVA URL DESCUBIERTA: hls.krussdomi.com en lugar de krussdomi.com/m3u8
-            const newM3u8Url = `https://hls.krussdomi.com/manifest/${videoId}/master.m3u8`;
+            const newM3u8Url = `https://hls.krussdomi.com/manifest/${selectedVideoId}/master.m3u8`;
             console.log('🔨 CONSTRUCTED NEW M3U8 URL:', newM3u8Url);
             console.log('🚀 RETURNING NEW STREAM FORMAT (STRING):', newM3u8Url);
             return newM3u8Url; // RETURN STRING DIRECTLY
