@@ -1,4 +1,4 @@
-// KaaTo Perfect - Combina lo mejor de SIMPLE_TEST y STREAM_FIXED
+// KaaTo Perfect Extension v10.2 - JSON Diagnosis
 // Search - Del original que funciona
 async function searchResults(keyword) {
     try {
@@ -311,8 +311,117 @@ async function extractStreamUrl(episodeUrl) {
                 }
             }
             
-            // Estrategia 4: Buscar patrones de URL directamente en el HTML
-            console.log('🔍 Strategy 4: Searching for direct URL patterns in HTML...');
+            // Estrategia 4: Análisis JSON mejorado
+            console.log('🔍 Strategy 4: Enhanced JSON analysis...');
+            
+            // Buscar cualquier objeto que contenga 'servers' con contenido más detallado
+            const enhancedServerPatterns = [
+                /servers\s*[:=]\s*(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})/gi,
+                /(?:const|var|let)\s+servers\s*=\s*(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})/gi,
+                /"servers"\s*:\s*(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})/gi,
+                /servers\s*=\s*(\[[^\[\]]*(?:\[[^\[\]]*\][^\[\]]*)*\])/gi
+            ];
+            
+            for (const pattern of enhancedServerPatterns) {
+                console.log(`🔍 Testing enhanced pattern: ${pattern.source}`);
+                const match = pattern.exec(html);
+                if (match) {
+                    const rawData = match[1];
+                    console.log(`✅ Enhanced match found! Length: ${rawData.length}`);
+                    console.log(`📄 Raw data preview: ${rawData.substring(0, 200)}...`);
+                    
+                    try {
+                        const parsed = JSON.parse(rawData);
+                        console.log(`✅ JSON parsed successfully! Type: ${typeof parsed}`);
+                        console.log(`📊 Parsed structure: ${JSON.stringify(parsed).substring(0, 300)}...`);
+                        
+                        // Buscar URLs en el objeto parseado
+                        const foundUrls = findUrlsInObject(parsed);
+                        if (foundUrls.length > 0) {
+                            console.log(`🎯 Found ${foundUrls.length} URLs in parsed object`);
+                            for (const url of foundUrls) {
+                                if (await testUrl(url)) {
+                                    return url;
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.log(`❌ JSON parse failed: ${e.message}`);
+                        console.log(`🔧 Attempting to fix common JSON issues...`);
+                        
+                        // Intentar reparar JSON común
+                        let fixedData = rawData
+                            .replace(/,\s*}/g, '}')  // Remove trailing commas
+                            .replace(/,\s*]/g, ']')  // Remove trailing commas in arrays
+                            .replace(/([{,]\s*)(\w+):/g, '$1"$2":')  // Quote unquoted keys
+                            .replace(/:\s*'([^']*)'/g, ': "$1"');    // Replace single quotes
+                        
+                        try {
+                            const parsed = JSON.parse(fixedData);
+                            console.log(`✅ Fixed JSON parsed successfully!`);
+                            const foundUrls = findUrlsInObject(parsed);
+                            if (foundUrls.length > 0) {
+                                console.log(`🎯 Found ${foundUrls.length} URLs in fixed object`);
+                                for (const url of foundUrls) {
+                                    if (await testUrl(url)) {
+                                        return url;
+                                    }
+                                }
+                            }
+                        } catch (e2) {
+                            console.log(`❌ Fixed JSON also failed: ${e2.message}`);
+                        }
+                    }
+                } else {
+                    console.log(`❌ No match for enhanced pattern: ${pattern.source}`);
+                }
+            }
+            
+            // Función helper para encontrar URLs en objetos
+            function findUrlsInObject(obj) {
+                const urls = [];
+                const urlPattern = /https?:\/\/[^\s"']+\.m3u8[^\s"']*/g;
+                
+                function searchRecursive(item) {
+                    if (typeof item === 'string') {
+                        const matches = item.match(urlPattern);
+                        if (matches) urls.push(...matches);
+                    } else if (Array.isArray(item)) {
+                        item.forEach(searchRecursive);
+                    } else if (typeof item === 'object' && item !== null) {
+                        Object.values(item).forEach(searchRecursive);
+                    }
+                }
+                
+                searchRecursive(obj);
+                return urls;
+            }
+            
+            // Función helper para test URLs
+            async function testUrl(url) {
+                try {
+                    console.log('🧪 Testing URL:', url);
+                    const testResponse = await fetchv2(url, {
+                        'Accept': 'application/vnd.apple.mpegurl, application/x-mpegurl, */*',
+                        'Origin': 'https://kaa.to',
+                        'Referer': 'https://kaa.to/'
+                    });
+                    
+                    if (testResponse && testResponse.status === 200) {
+                        console.log('✅ SUCCESS! Working stream found:', url);
+                        return true;
+                    } else {
+                        console.log(`❌ URL test failed. Status: ${testResponse?.status || 'No response'}`);
+                        return false;
+                    }
+                } catch (error) {
+                    console.log(`❌ URL test error: ${error.message}`);
+                    return false;
+                }
+            }
+            
+            // Estrategia 5: Buscar patrones de URL directamente en el HTML
+            console.log('🔍 Strategy 5: Searching for direct URL patterns in HTML...');
             const urlPatterns = [
                 /https:\/\/krussdomi\.com\/m3u8\/[a-f0-9]{24}\.m3u8/g,
                 /https:\/\/[^"'<>\s]+\.m3u8/g,
@@ -326,22 +435,8 @@ async function extractStreamUrl(episodeUrl) {
                     console.log(`✅ Found ${matches.length} potential URLs with pattern:`, matches);
                     
                     for (const foundUrl of matches) {
-                        try {
-                            console.log('🧪 Testing URL:', foundUrl);
-                            const testResponse = await fetchv2(foundUrl, {
-                                'Accept': 'application/vnd.apple.mpegurl, application/x-mpegurl, */*',
-                                'Origin': 'https://kaa.to',
-                                'Referer': 'https://kaa.to/'
-                            });
-                            
-                            if (testResponse && testResponse.status === 200) {
-                                console.log('✅ SUCCESS! Working stream found:', foundUrl);
-                                return foundUrl;
-                            } else {
-                                console.log('❌ URL test failed - status:', testResponse ? testResponse.status : 'null');
-                            }
-                        } catch (e) {
-                            console.log('❌ URL test failed with error:', foundUrl, e.message);
+                        if (await testUrl(foundUrl)) {
+                            return foundUrl;
                         }
                     }
                 } else {
