@@ -1,12 +1,12 @@
 {
-    "sourceName": "KaaTo Hybrid",
+    "sourceName": "KaaTo Hybrid v6.1",
     "iconUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/logo.png",
     "author": {
         "name": "Hawkeye182",
         "icon": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
         "url": "https://github.com/Hawkeye182/Sora-Modules-main"
     },
-    "version": "6.0.0",
+    "version": "6.1.0",
     "language": "subs",
     "streamType": "HLS",
     "quality": "1080p",
@@ -15,7 +15,7 @@
     "baseUrl": "https://kaa.to/",
     "searchBaseUrl": "https://kaa.to/api/search",
     "searchUrl": "https://kaa.to/search?query=%s",
-    "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo_HYBRID.js?v=6.0.0",
+    "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo_HYBRID.js?v=6.1.0",
     "asyncJS": true,
     "streamAsyncJS": true,
     "softsub": true

@@ -1,4 +1,4 @@
-// KaaTo Hybrid - Búsquedas/detalles originales + streams alternativos
+// KaaTo Hybrid v6.1 - Búsquedas/detalles originales + streams alternativos
 // Search (CORREGIDO - Retorna array directamente)
 async function searchResults(keyword) {
     try {
@@ -25,7 +25,6 @@ async function searchResults(keyword) {
                     href: `https://kaa.to/anime/${item.slug}`
                 }));
                 
-                console.log('Search results:', results.length);
                 return results;  // ✅ Objeto directo
             } else {
                 return [];
@@ -34,7 +33,6 @@ async function searchResults(keyword) {
             return [];
         }
     } catch (error) {
-        console.log('Search error: ' + error.message);
         return [];
     }
 }
@@ -62,13 +60,11 @@ async function extractDetails(url) {
                        `https://kaa.to/image/poster/${data.poster.hq}.webp` : ''
             };
             
-            console.log('Details extracted:', details.title);
             return details;  // ✅ Objeto directo
         } else {
             return {};
         }
     } catch (error) {
-        console.log('Details error: ' + error.message);
         return {};
     }
 }
@@ -121,7 +117,6 @@ async function extractEpisodes(url) {
         console.log('Total episodes found:', allEpisodes.length);
         return allEpisodes;  // ✅ Array directo
     } catch (error) {
-        console.log('Episodes error: ' + error.message);
         return [];
     }
 }
