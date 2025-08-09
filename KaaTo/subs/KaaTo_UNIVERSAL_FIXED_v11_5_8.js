@@ -1,9 +1,9 @@
-// KaaTo Universal Extension v11.5.8 - EXACT BACKUP COPY THAT WORKS
-// Copying exact working code from KaaTo_UNIVERSAL_BACKUP.js
+// KaaTo Universal Extension v11.5.8 - EPISODES API FIXED
+// CRITICAL FIX: episodes?ep=1&lang= instead of episodes?limit=2000&page=1&language=
 
-console.log('🚨🚨🚨 [v11.5.8 BACKUP COPY] MODULE STARTING TO LOAD 🚨🚨🚨');
+console.log('🚨🚨🚨 [v11.5.8 EPISODES FIXED] MODULE STARTING TO LOAD 🚨🚨🚨');
 
-// Search - Del original que funciona
+// Search - Del PERFECT que funciona
 async function searchResults(keyword) {
     console.log('🔍 [v11.5.8] searchResults CALLED with keyword:', keyword);
     try {
@@ -41,7 +41,7 @@ async function searchResults(keyword) {
     }
 }
 
-// Details - EXACTO como BACKUP que SÍ funciona
+// Details - Del PERFECT que funciona
 async function extractDetails(url) {
     console.log('📄 [v11.5.8] extractDetails CALLED with URL:', url);
     try {
@@ -239,33 +239,48 @@ async function extractStreamUrl(episodeUrl) {
             return m3u8Urls[0];
         }
         
-        // PATTERN 2: Buscar Video IDs para construcción M3U8
+        // PATTERN 2: Buscar source.php patterns (de los descubrimientos F12)
+        const sourcePattern = /source\.php\?id=([a-f0-9]{24})/gi;
+        const sourceMatches = html.match(sourcePattern);
+        
+        if (sourceMatches && sourceMatches.length > 0) {
+            console.log('🎯 FOUND source.php patterns:', sourceMatches);
+            const videoIdMatch = sourceMatches[0].match(/id=([a-f0-9]{24})/);
+            if (videoIdMatch) {
+                const videoId = videoIdMatch[1];
+                const masterUrl = `https://hls.krussdomi.com/manifest/${videoId}/master.m3u8`;
+                console.log('🔨 CONSTRUCTED MASTER M3U8:', masterUrl);
+                console.log('🚀 RETURNING MASTER STREAM (STRING):', masterUrl);
+                return masterUrl;
+            }
+        }
+        
+        // PATTERN 3: Video IDs para construcción M3U8
         const videoIdPattern = /[a-f0-9]{24}/g;
         const videoIds = html.match(videoIdPattern);
         
         if (videoIds && videoIds.length > 0) {
             console.log('🎯 FOUND VIDEO IDs:', videoIds);
-            // Usar la nueva URL que funciona
-            const m3u8Url = `https://hls.krussdomi.com/manifest/${videoIds[0]}/master.m3u8`;
-            console.log('🔨 CONSTRUCTED M3U8 URL:', m3u8Url);
-            console.log('🚀 RETURNING CONSTRUCTED STREAM (STRING):', m3u8Url);
-            return m3u8Url;
+            const masterUrl = `https://hls.krussdomi.com/manifest/${videoIds[0]}/master.m3u8`;
+            console.log('🔨 CONSTRUCTED M3U8 URL:', masterUrl);
+            console.log('🚀 RETURNING CONSTRUCTED STREAM (STRING):', masterUrl);
+            return masterUrl;
         }
         
-        // PATTERN 3: Look for KaaTo-specific patterns
+        // PATTERN 4: Look for KaaTo-specific patterns
         const kaatoPattern = /video[_-]?id['":\s]*['"]?([a-f0-9]{24})/gi;
         const kaatoMatches = html.match(kaatoPattern);
         
         if (kaatoMatches && kaatoMatches.length > 0) {
             console.log('🎯 FOUND KAATO PATTERNS:', kaatoMatches);
             const videoId = kaatoMatches[0].match(/[a-f0-9]{24}/)[0];
-            const m3u8Url = `https://hls.krussdomi.com/manifest/${videoId}/master.m3u8`;
-            console.log('🔨 CONSTRUCTED FROM KAATO PATTERN:', m3u8Url);
-            console.log('🚀 RETURNING KAATO STREAM (STRING):', m3u8Url);
-            return m3u8Url;
+            const masterUrl = `https://hls.krussdomi.com/manifest/${videoId}/master.m3u8`;
+            console.log('🔨 CONSTRUCTED FROM KAATO PATTERN:', masterUrl);
+            console.log('🚀 RETURNING KAATO STREAM (STRING):', masterUrl);
+            return masterUrl;
         }
         
-        // PATTERN 4: Look for other video patterns
+        // PATTERN 5: Look for other video patterns
         const mp4Pattern = /https?:\/\/[^\s"'<>]+\.mp4/gi;
         const mp4Urls = html.match(mp4Pattern);
         
@@ -275,15 +290,15 @@ async function extractStreamUrl(episodeUrl) {
             return mp4Urls[0];
         }
         
-        console.log('❌ NO STREAMS FOUND - Returning demo video');
+        console.log('❌ No streams found - returning demo video');
         
     } catch (error) {
         console.log('❌ ERROR in extractStreamUrl:', error.message);
         console.log('📋 Error details:', error.stack);
     }
     
-    console.log('🔄 FALLBACK: Returning demo video (STRING)');
+    console.log('🔄 Returning fallback demo video');
     return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 }
 
-console.log('✅ [v11.5.8 BACKUP COPY] MODULE FULLY LOADED - Ready for testing!');
+console.log('✅ [v11.5.8] MODULE FULLY LOADED - EPISODES API FIXED!');

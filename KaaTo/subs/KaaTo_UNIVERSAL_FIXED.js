@@ -122,8 +122,8 @@ async function extractEpisodes(url) {
         
         console.log('Using language:', selectedLanguage);
         
-        // Obtener episodios con límite alto para asegurar que obtenemos todos
-        const episodesResponse = await fetchv2(`https://kaa.to/api/show/${slug}/episodes?limit=2000&page=1&language=${selectedLanguage}`);
+        // Obtener episodios con el parámetro correcto (como en UNIVERSAL que funciona)
+        const episodesResponse = await fetchv2(`https://kaa.to/api/show/${slug}/episodes?ep=1&lang=${selectedLanguage}`);
         
         if (episodesResponse && episodesResponse.status === 200 && episodesResponse._data) {
             let episodesData;
