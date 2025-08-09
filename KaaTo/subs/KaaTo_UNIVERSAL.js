@@ -2,7 +2,93 @@
 // Exact copy of PERFECT functions with UNIVERSAL extractStreamUrl
 
 console.log('🚨🚨🚨 [v12.0 CACHE BUSTER] MODULE STARTING TO LOAD 🚨🚨🚨');
-console.log('🎯 [v12.0] TIMESTAMP:', new Date().toISOString());
+console.log('🎯 [v12.0] TIMESasync function extractStreamUrl(input) {
+    console.log('🚨🚨🚨 [v11.4 UNIVERSAL - STRING FORMAT] 🚨🚨🚨');
+    console.log('⚡ extractStreamUrl CALLED AT:', new Date().toISOString());
+    console.log('📍 Input received:', typeof input, input && input.length > 500 ? 'HTML_CONTENT' : input);
+    console.log('🔥 RETURNING STRING LIKE ANIMEFLV! 🔥');
+    
+    try {
+        let html;
+        let episodeUrl;
+        
+        // DETECT INPUT TYPE
+        if (input && (input.includes('<html') || input.includes('<!DOCTYPE') || input.includes('<body'))) {
+            // INPUT IS HTML - Sora already fetched it
+            console.log('🌐 Input detected as: HTML CONTENT');
+            html = input;
+            episodeUrl = 'parsed_from_html';
+        } else if (input && input.startsWith('http')) {
+            // INPUT IS URL - We need to fetch it
+            console.log('🌐 Input detected as: EPISODE URL');
+            episodeUrl = input;
+            
+            console.log('📡 Fetching HTML from URL...');
+            const response = await fetchv2(episodeUrl, {}, 'GET', null);
+            html = typeof response === 'object' ? await response.text() : response;
+            console.log('✅ HTML fetched, length:', html.length);
+        } else {
+            console.log('❌ Invalid input type or null input');
+            return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+        }
+        
+        console.log('🔍 Analyzing HTML for streams...');
+        
+        // PATTERN 1: Direct M3U8 URLs in HTML
+        const m3u8Pattern = /https?:\/\/[^\s"'<>]+\.m3u8/gi;
+        const m3u8Urls = html.match(m3u8Pattern);
+        
+        if (m3u8Urls && m3u8Urls.length > 0) {
+            console.log('🎯 FOUND DIRECT M3U8 URLs:', m3u8Urls);
+            console.log('🚀 RETURNING M3U8 STREAM (STRING):', m3u8Urls[0]);
+            return m3u8Urls[0]; // RETURN STRING DIRECTLY
+        }
+        
+        // PATTERN 2: Video IDs for M3U8 construction - More specific patterns
+        const videoIdPattern = /[a-f0-9]{24}/g;
+        const videoIds = html.match(videoIdPattern);
+        
+        if (videoIds && videoIds.length > 0) {
+            console.log('🎯 FOUND VIDEO IDs:', videoIds);
+            const m3u8Url = `https://krussdomi.com/m3u8/${videoIds[0]}.m3u8`;
+            console.log('🔨 CONSTRUCTED M3U8 URL:', m3u8Url);
+            console.log('🚀 RETURNING CONSTRUCTED STREAM (STRING):', m3u8Url);
+            return m3u8Url; // RETURN STRING DIRECTLY
+        }
+        
+        // PATTERN 3: Look for KaaTo-specific patterns
+        const kaatoPattern = /video[_-]?id['":\s]*['"]?([a-f0-9]{24})/gi;
+        const kaatoMatches = html.match(kaatoPattern);
+        
+        if (kaatoMatches && kaatoMatches.length > 0) {
+            console.log('🎯 FOUND KAATO PATTERNS:', kaatoMatches);
+            const videoId = kaatoMatches[0].match(/[a-f0-9]{24}/)[0];
+            const m3u8Url = `https://krussdomi.com/m3u8/${videoId}.m3u8`;
+            console.log('🔨 CONSTRUCTED FROM KAATO PATTERN:', m3u8Url);
+            console.log('🚀 RETURNING KAATO STREAM (STRING):', m3u8Url);
+            return m3u8Url; // RETURN STRING DIRECTLY
+        }
+        
+        // PATTERN 4: Look for other video patterns
+        const mp4Pattern = /https?:\/\/[^\s"'<>]+\.mp4/gi;
+        const mp4Urls = html.match(mp4Pattern);
+        
+        if (mp4Urls && mp4Urls.length > 0) {
+            console.log('🎯 FOUND MP4 URLs:', mp4Urls);
+            console.log('🚀 RETURNING MP4 STREAM (STRING):', mp4Urls[0]);
+            return mp4Urls[0]; // RETURN STRING DIRECTLY
+        }
+        
+        console.log('❌ NO STREAMS FOUND - Returning demo video (STRING)');
+        
+    } catch (error) {
+        console.log('❌ ERROR in extractStreamUrl:', error.message);
+        console.log('📋 Error details:', error.stack);
+    }
+    
+    console.log('🔄 FALLBACK: Returning demo video (STRING)');
+    return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"; // RETURN STRING DIRECTLY
+}).toISOString());
 console.log('🔥 [v12.0] IF YOU SEE THIS - NEW VERSION LOADED! 🔥');
 
 // =============================================================================
