@@ -1,0 +1,21 @@
+{
+    "sourceName": "Debug Simple Test",
+    "iconUrl": "https://via.placeholder.com/100x100/blue/white?text=DEBUG",
+    "author": {
+        "name": "Debug",
+        "icon": "https://via.placeholder.com/50x50/red/white?text=D",
+        "url": "https://example.com"
+    },
+    "version": "1.0.0",
+    "language": "subs",
+    "streamType": "HLS",
+    "quality": "1080p",
+    "type": "anime",
+    "downloadSupport": false,
+    "baseUrl": "https://example.com/",
+    "searchBaseUrl": "https://example.com/search",
+    "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo_debug_simple.js",
+    "asyncJS": false,
+    "streamAsyncJS": false,
+    "softsub": true
+}

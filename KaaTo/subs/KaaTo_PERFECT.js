@@ -36,75 +36,165 @@ async function searchResults(keyword) {
     }
 }
 
-// Details - Del SIMPLE_TEST que SÍ muestra descripción/año
+// Details
 async function extractDetails(url) {
     try {
-        const slug = url.split('/anime/')[1] || url.split('/').pop();
+        const slug = url.split('/').pop();
         const response = await fetchv2(`https://kaa.to/api/show/${slug}`);
         
-        if (response && response._data) {
-            let details = response._data;
-            if (typeof details === 'string') {
-                details = JSON.parse(details);
+        if (response && response.status === 200 && response._data) {
+            let data = response._data;
+            if (typeof data === 'string') {
+                data = JSON.parse(data);
             }
             
-            const result = {
-                description: details.synopsis || details.description || "Sin descripción disponible",
-                aliases: [details.title_en, details.title_original].filter(title => title && title !== details.title).join(', ') || '',
-                airdate: details.year ? `Año: ${details.year}` : 'Aired: Unknown'
-            };
-            
-            return JSON.stringify([result]);  // ✅ Array como SIMPLE_TEST
+            if (data && data.result) {
+                const result = {
+                    description: data.result.synopsis || 'No description available',
+                    aliases: data.result.title_en || data.result.title || '',
+                    airdate: data.result.premiered || 'Unknown'
+                };
+                
+                return JSON.stringify([result]);
+            } else {
+                return JSON.stringify([{
+                    description: 'Error loading details',
+                    aliases: '',
+                    airdate: 'Unknown'
+                }]);
+            }
         }
-        return JSON.stringify([{description: "Error obteniendo detalles", aliases: "", airdate: "Aired: Unknown"}]);
     } catch (error) {
-        return JSON.stringify([{description: 'Error: ' + error.message, aliases: '', airdate: 'Aired: Unknown'}]);
+        console.log('Details error: ' + error.message);
+        return JSON.stringify([{
+            description: 'Error loading details',
+            aliases: '',
+            airdate: 'Unknown'
+        }]);
     }
 }
 
-// Episodes - Del STREAM_FIXED que SÍ obtiene todos los episodios (FORMATO CORREGIDO)
+// Episodes - EXACTAMENTE del STREAM_FIXED que funcionaba bien
 async function extractEpisodes(url) {
     try {
-        const slug = url.split('/anime/')[1] || url.split('/').pop();
-        let allEpisodes = [];
-        let currentPage = 1;
-        let hasMorePages = true;
+        const slug = url.split('/').pop();
         
-        while (hasMorePages && currentPage <= 20) {
-            const response = await fetchv2(`https://kaa.to/api/show/${slug}/episodes?page=${currentPage}`);
-            
-            if (response && response.status === 200 && response._data) {
-                let data = response._data;
-                if (typeof data === 'string') {
-                    data = JSON.parse(data);
-                }
-                
-                if (data.pages && data.pages.episodes && data.pages.episodes.length > 0) {
-                    const episodes = data.pages.episodes.map(ep => ({
-                        href: `https://kaa.to/episode/${ep.id}`,
-                        number: ep.episode  // ✅ Formato exacto del STREAM_FIXED
-                    }));
-                    
-                    allEpisodes = allEpisodes.concat(episodes);
-                    
-                    if (currentPage >= data.pages.total) {
-                        hasMorePages = false;
-                    } else {
-                        currentPage++;
-                    }
-                } else {
-                    hasMorePages = false;
-                }
-            } else {
-                hasMorePages = false;
-            }
-            
-            await new Promise(resolve => setTimeout(resolve, 100));
+        // Obtener información del idioma primero
+        const languageResponse = await fetchv2(`https://kaa.to/api/show/${slug}/language`);
+        
+        if (!languageResponse || languageResponse.status !== 200) {
+            console.log('Language API failed');
+            return JSON.stringify([{
+                href: url,
+                number: 1
+            }]);
         }
         
-        return JSON.stringify(allEpisodes);  // ✅ Todos los episodios con formato correcto
+        let languageData;
+        try {
+            languageData = typeof languageResponse._data === 'string' ? 
+                          JSON.parse(languageResponse._data) : languageResponse._data;
+        } catch (e) {
+            console.log('Failed to parse language response');
+            return JSON.stringify([{
+                href: url,
+                number: 1
+            }]);
+        }
+        
+        // Usar japonés con subtítulos como preferencia
+        let selectedLanguage = 'ja-JP';
+        if (languageData && languageData.result && Array.isArray(languageData.result)) {
+            const availableLanguages = languageData.result;
+            
+            // Buscar japonés primero, luego inglés como fallback
+            const jaLang = availableLanguages.find(lang => lang.includes('ja-JP'));
+            const enLang = availableLanguages.find(lang => lang.includes('en-US'));
+            
+            if (jaLang) {
+                selectedLanguage = 'ja-JP';
+            } else if (enLang) {
+                selectedLanguage = 'en-US';
+            } else if (availableLanguages.length > 0) {
+                selectedLanguage = availableLanguages[0];
+            }
+        }
+        
+        console.log('Using language:', selectedLanguage);
+        
+        // Obtener episodios con el idioma seleccionado
+        const episodesResponse = await fetchv2(`https://kaa.to/api/show/${slug}/episodes?ep=1&lang=${selectedLanguage}`);
+        
+        if (episodesResponse && episodesResponse.status === 200 && episodesResponse._data) {
+            let episodesData;
+            try {
+                episodesData = typeof episodesResponse._data === 'string' ? 
+                              JSON.parse(episodesResponse._data) : episodesResponse._data;
+            } catch (e) {
+                console.log('Failed to parse episodes response');
+                return JSON.stringify([{
+                    href: url,
+                    number: 1
+                }]);
+            }
+            
+            if (episodesData && episodesData.result && episodesData.result.length > 0) {
+                console.log(`Found ${episodesData.result.length} episodes on first page`);
+                
+                // Si hay información de paginación, obtener todos los episodios
+                const allEpisodes = [];
+                
+                // Estrategia 1: Usar la información de pages para obtener todos los números de episodio
+                if (episodesData.pages && Array.isArray(episodesData.pages) && episodesData.pages.length > 1) {
+                    console.log(`Found ${episodesData.pages.length} pages of episodes`);
+                    
+                    // Generar todos los números de episodio de todas las páginas
+                    episodesData.pages.forEach(page => {
+                        if (page.eps && Array.isArray(page.eps)) {
+                            page.eps.forEach(epNum => {
+                                // Buscar el slug correspondiente en los resultados actuales
+                                const episodeData = episodesData.result.find(ep => ep.episode_number === epNum);
+                                const episodeSlug = episodeData ? episodeData.slug : `ep-${epNum}`;
+                                
+                                allEpisodes.push({
+                                    href: `https://kaa.to/${slug}/ep-${epNum}-${episodeSlug}`,
+                                    number: epNum
+                                });
+                            });
+                        }
+                    });
+                    
+                    console.log(`Total episodes generated from pages: ${allEpisodes.length}`);
+                } else {
+                    // Estrategia 2: Usar solo los episodios de la primera página
+                    episodesData.result.forEach(episode => {
+                        allEpisodes.push({
+                            href: `https://kaa.to/${slug}/ep-${episode.episode_number}-${episode.slug}`,
+                            number: episode.episode_number
+                        });
+                    });
+                }
+                
+                // Ordenar por número de episodio
+                allEpisodes.sort((a, b) => a.number - b.number);
+                
+                console.log(`Returning ${allEpisodes.length} episodes for ${slug}`);
+                return JSON.stringify(allEpisodes);
+            }
+        }
+        
+        // Fallback
+        return JSON.stringify([{
+            href: url,
+            number: 1
+        }]);
+        
     } catch (error) {
-        return JSON.stringify([]);
+        console.log('Episodes error: ' + error.message);
+        return JSON.stringify([{
+            href: url,
+            number: 1
+        }]);
     }
 }
 
