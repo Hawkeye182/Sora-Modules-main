@@ -244,24 +244,25 @@ async function extractStreamUrl(url) {
                     if (videoId) {
                         console.log('Extracted video ID:', videoId);
                         
-                        // Intentar obtener el M3U8 con headers apropiados para Cloudflare
+                        // Intentar obtener el M3U8 con headers más específicos para Cloudflare
                         const m3u8Url = `https://hls.krussdomi.com/manifest/${videoId}/master.m3u8`;
                         console.log('Trying M3U8 URL:', m3u8Url);
                         
                         const m3u8Response = await fetchv2(m3u8Url, {
                             'Accept': '*/*',
-                            'Accept-Encoding': 'gzip, deflate, br, zstd',
-                            'Accept-Language': 'es-419,es;q=0.9',
+                            'Accept-Encoding': 'gzip, deflate, br',
+                            'Accept-Language': 'en-US,en;q=0.9',
+                            'Cache-Control': 'no-cache',
                             'Origin': 'https://krussdomi.com',
+                            'Pragma': 'no-cache',
                             'Referer': serverUrl,
-                            'Sec-Ch-Ua': '"Not;A=Brand";v="99", "Brave";v="139", "Chromium";v="139"',
+                            'Sec-Ch-Ua': '"Chromium";v="118", "Google Chrome";v="118", "Not=A?Brand";v="99"',
                             'Sec-Ch-Ua-Mobile': '?0',
                             'Sec-Ch-Ua-Platform': '"Windows"',
                             'Sec-Fetch-Dest': 'empty',
                             'Sec-Fetch-Mode': 'cors',
                             'Sec-Fetch-Site': 'same-site',
-                            'Sec-Gpc': '1',
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36'
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36'
                         });
                         
                         if (m3u8Response && m3u8Response.status === 200) {
@@ -269,6 +270,10 @@ async function extractStreamUrl(url) {
                             return m3u8Url;
                         } else {
                             console.log('M3U8 failed with status:', m3u8Response ? m3u8Response.status : 'no response');
+                            
+                            // Si M3U8 falla, intentar acceder al player directamente
+                            console.log('Trying direct player URL as fallback');
+                            return serverUrl;
                         }
                     }
                 }
