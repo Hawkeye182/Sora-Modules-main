@@ -1,12 +1,12 @@
 {
-    "sourceName": "KaaTo Universal v11.4 - STRING FORMAT",
+    "sourceName": "KaaTo Universal v11.5 - ENHANCED STREAM RESOLUTION",
     "iconUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/logo.png",
     "author": {
         "name": "Hawkeye182",
         "icon": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
         "url": "https://github.com/Hawkeye182/Sora-Modules-main"
     },
-    "version": "11.4.0",
+    "version": "11.5.0",
     "language": "subs",
     "streamType": "HLS",
     "quality": "1080p",
