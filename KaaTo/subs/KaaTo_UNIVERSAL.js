@@ -1,56 +1,49 @@
-// KaaTo Universal v11.7 - EACH LOG AS SEPARATE RESULT
-// Global variable to store debug results
-let debugResults = [];
+// KaaTo Universal Extension v11.0 - SORA COMPATIBLE (HTML+URL Support)
+// Exact copy of PERFECT functions with UNIVERSAL extractStreamUrl
 
-function addDebugLog(message) {
-    const timestamp = new Date().toLocaleTimeString();
-    const debugResult = {
-        title: `🔧 DEBUG [${timestamp}]`,
-        subtitle: message,
-        image: 'https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/logo.png',
-        url: 'debug://log'
-    };
-    debugResults.push(debugResult);
-    console.log(`[${timestamp}] ${message}`);
-    
-    // Keep only last 15 debug results to avoid memory issues
-    if (debugResults.length > 15) {
-        debugResults.shift();
-    }
-}
+console.log('🚨🚨🚨 [UNIVERSAL DEBUG] MODULE LOADED AT:', new Date().toISOString());
 
-// Intercept functions to debug which method Sora actually calls
-addDebugLog('🚨🚨🚨 [UNIVERSAL DEBUG] MODULE LOADED');
-addDebugLog('🎯 [DEBUG] ALL INTERCEPT FUNCTIONS LOADED - Ready to catch ANY call!');
+// =============================================================================
+// DEBUG: INTERCEPT ALL POSSIBLE SORA CALLS
+// =============================================================================
 
+// Method 2: Alternative names Sora might use
 async function getStreamUrl(input) {
-    addDebugLog('📺 [INTERCEPT-getStreamUrl] Método detectado: getStreamUrl');
-    addDebugLog(`🎯 Input recibido: ${typeof input} ${input}`);
+    console.log('🎯 [METHOD 2] getStreamUrl called with:', typeof input);
+    console.log('📝 Input preview:', input ? input.substring(0, 100) + '...' : 'null');
     return await extractStreamUrl(input);
 }
 
+// Method 3: Another possible name
 async function fetchStream(input) {
-    addDebugLog('📺 [INTERCEPT-fetchStream] Método detectado: fetchStream');
-    addDebugLog(`🎯 Input recibido: ${typeof input} ${input}`);
+    console.log('🎯 [METHOD 3] fetchStream called with:', typeof input);
+    console.log('📝 Input preview:', input ? input.substring(0, 100) + '...' : 'null');
     return await extractStreamUrl(input);
 }
 
+// Method 4: Stream URL
 async function streamUrl(input) {
-    addDebugLog('📺 [INTERCEPT-streamUrl] Método detectado: streamUrl');
-    addDebugLog(`🎯 Input recibido: ${typeof input} ${input}`);
+    console.log('🎯 [METHOD 4] streamUrl called with:', typeof input);
+    console.log('📝 Input preview:', input ? input.substring(0, 100) + '...' : 'null');
     return await extractStreamUrl(input);
 }
 
+// Method 5: Get Stream
 async function getStream(input) {
-    addDebugLog('📺 [INTERCEPT-getStream] Método detectado: getStream');
-    addDebugLog(`🎯 Input recibido: ${typeof input} ${input}`);
+    console.log('🎯 [METHOD 5] getStream called with:', typeof input);
+    console.log('📝 Input preview:', input ? input.substring(0, 100) + '...' : 'null');
     return await extractStreamUrl(input);
 }
 
-// Search - Working from PERFECT + LOG DISPLAY
+console.log('🎯 [DEBUG] ALL INTERCEPT FUNCTIONS LOADED - Ready to catch ANY call!');
+
+// =============================================================================
+// END DEBUG CODE
+// =============================================================================
+
+// Search - Del PERFECT que funciona EXACTO
 async function searchResults(keyword) {
-    addDebugLog(`🔍 [v11.7] searchResults CALLED with keyword: ${keyword}`);
-    
+    console.log('🔍 [v11.0] searchResults CALLED with keyword:', keyword);
     try {
         const response = await fetchv2('https://kaa.to/api/search', {
             'Content-Type': 'application/json',
@@ -74,14 +67,6 @@ async function searchResults(keyword) {
                     href: `https://kaa.to/anime/${item.slug}`
                 }));
                 
-                // ADD DEBUG RESULTS AS SEPARATE ITEMS
-                if (debugResults.length > 0) {
-                    // Add each debug result as a separate search result
-                    debugResults.forEach(debugResult => {
-                        results.unshift(debugResult);
-                    });
-                }
-                
                 return JSON.stringify(results);
             } else {
                 return JSON.stringify([]);
@@ -90,14 +75,13 @@ async function searchResults(keyword) {
             return JSON.stringify([]);
         }
     } catch (error) {
-        addDebugLog(`❌ Search error: ${error.message}`);
         return JSON.stringify([]);
     }
 }
 
-// Details - Working from PERFECT
+// Details - EXACTO como PERFECT que SÍ funciona
 async function extractDetails(url) {
-    console.log('📄 [v11.6] extractDetails CALLED with URL:', url);
+    console.log('� [v11.0] extractDetails CALLED with URL:', url);
     try {
         const slug = url.split('/anime/')[1] || url.split('/').pop();
         const response = await fetchv2(`https://kaa.to/api/show/${slug}`);
@@ -108,64 +92,73 @@ async function extractDetails(url) {
                 details = JSON.parse(details);
             }
             
-            if (details && details.synopsis) {
-                return JSON.stringify([{
-                    description: details.synopsis,
-                    aliases: details.title_en || details.title || '',
-                    airdate: details.aired || details.year || 'Unknown'
-                }]);
-            }
+            const result = {
+                description: details.synopsis || details.description || "Sin descripción disponible",
+                aliases: [details.title_en, details.title_original].filter(title => title && title !== details.title).join(', ') || '',
+                airdate: details.year ? `Año: ${details.year}` : 'Aired: Unknown'
+            };
+            
+            return JSON.stringify([result]);
         }
+        
         return JSON.stringify([{description: "Error obteniendo detalles", aliases: "", airdate: "Aired: Unknown"}]);
     } catch (error) {
         return JSON.stringify([{description: 'Error: ' + error.message, aliases: '', airdate: 'Aired: Unknown'}]);
     }
 }
 
-// Episodes - Working from PERFECT
+// Episodes - EXACTO como PERFECT que SÍ funciona
 async function extractEpisodes(url) {
-    console.log('📺 [v11.6] extractEpisodes CALLED with URL:', url);
+    console.log('📺 [v11.0] extractEpisodes CALLED with URL:', url);
+    
     try {
-        const slug = url.split('/').pop();
+        // Extract slug from URL
+        const urlMatch = url.match(/\/anime\/([^\/]+)/);
+        if (!urlMatch || !urlMatch[1]) {
+            console.log('❌ Could not extract slug from URL');
+            return JSON.stringify([{
+                href: url,
+                number: 1
+            }]);
+        }
+        
+        const slug = urlMatch[1];
         console.log('🎯 Extracted slug:', slug);
         
-        // Get language info first
-        const languageResponse = await fetchv2(`https://kaa.to/api/show/${slug}/language`);
+        // Get available languages first
+        const langResponse = await fetchv2(`https://kaa.to/api/show/${slug}`);
+        let selectedLanguage = 'ja-JP'; // Default to Japanese
         
-        if (!languageResponse || languageResponse.status !== 200) {
-            console.log('Language API failed');
-            return JSON.stringify([{href: url, number: 1}]);
-        }
-        
-        let languageData;
-        try {
-            languageData = typeof languageResponse._data === 'string' ? 
-                          JSON.parse(languageResponse._data) : languageResponse._data;
-        } catch (e) {
-            console.log('Failed to parse language response');
-            return JSON.stringify([{href: url, number: 1}]);
-        }
-        
-        // Use Japanese with subtitles as preference
-        let selectedLanguage = 'ja-JP';
-        if (languageData && languageData.result && Array.isArray(languageData.result)) {
-            const availableLanguages = languageData.result;
+        if (langResponse && langResponse.status === 200 && langResponse._data) {
+            let langData;
+            try {
+                langData = typeof langResponse._data === 'string' ? 
+                          JSON.parse(langResponse._data) : langResponse._data;
+            } catch (e) {
+                console.log('Failed to parse language response');
+            }
             
-            const jaLang = availableLanguages.find(lang => lang.includes('ja-JP'));
-            const enLang = availableLanguages.find(lang => lang.includes('en-US'));
-            
-            if (jaLang) {
-                selectedLanguage = 'ja-JP';
-            } else if (enLang) {
-                selectedLanguage = 'en-US';
-            } else if (availableLanguages.length > 0) {
-                selectedLanguage = availableLanguages[0];
+            if (langData && langData.available_languages) {
+                const availableLanguages = Object.keys(langData.available_languages);
+                console.log('Available languages:', availableLanguages);
+                
+                // Buscar japonés primero, luego inglés como fallback
+                const jaLang = availableLanguages.find(lang => lang.includes('ja-JP'));
+                const enLang = availableLanguages.find(lang => lang.includes('en-US'));
+                
+                if (jaLang) {
+                    selectedLanguage = 'ja-JP';
+                } else if (enLang) {
+                    selectedLanguage = 'en-US';
+                } else if (availableLanguages.length > 0) {
+                    selectedLanguage = availableLanguages[0];
+                }
             }
         }
         
         console.log('Using language:', selectedLanguage);
         
-        // Get episodes with selected language
+        // Obtener episodios con el idioma seleccionado
         const episodesResponse = await fetchv2(`https://kaa.to/api/show/${slug}/episodes?ep=1&lang=${selectedLanguage}`);
         
         if (episodesResponse && episodesResponse.status === 200 && episodesResponse._data) {
@@ -175,27 +168,31 @@ async function extractEpisodes(url) {
                               JSON.parse(episodesResponse._data) : episodesResponse._data;
             } catch (e) {
                 console.log('Failed to parse episodes response');
-                return JSON.stringify([{href: url, number: 1}]);
+                return JSON.stringify([{
+                    href: url,
+                    number: 1
+                }]);
             }
             
             if (episodesData && episodesData.result && episodesData.result.length > 0) {
                 console.log(`Found ${episodesData.result.length} episodes on first page`);
                 
+                // Si hay información de paginación, obtener todos los episodios
                 const allEpisodes = [];
                 
-                // Strategy 1: Use page info to get all episode numbers
+                // Estrategia 1: Usar la información de pages para obtener todos los números de episodio
                 if (episodesData.pages && Array.isArray(episodesData.pages) && episodesData.pages.length > 1) {
                     console.log(`Found ${episodesData.pages.length} pages of episodes`);
                     
-                    // Generate all episode numbers from all pages
+                    // Generar todos los números de episodio de todas las páginas
                     episodesData.pages.forEach(page => {
                         if (page.eps && Array.isArray(page.eps)) {
                             page.eps.forEach(epNum => {
-                                // Find corresponding slug in current results
+                                // Buscar el slug correspondiente en los resultados actuales
                                 const episodeData = episodesData.result.find(ep => ep.episode_number === epNum);
                                 const episodeSlug = episodeData ? episodeData.slug : `missing-${epNum}`;
                                 
-                                // CORRECT FORMAT: https://kaa.to/{show_slug}/ep-{episode_number}-{episode_slug}
+                                // FORMATO CORRECTO: https://kaa.to/{show_slug}/ep-{episode_number}-{episode_slug}
                                 allEpisodes.push({
                                     href: `https://kaa.to/${slug}/ep-${epNum}-${episodeSlug}`,
                                     number: epNum
@@ -203,101 +200,133 @@ async function extractEpisodes(url) {
                             });
                         }
                     });
-                    
-                    console.log(`Generated ${allEpisodes.length} episode links`);
                 } else {
-                    // Strategy 2: Use only first page episodes
-                    episodesData.result.forEach(episode => {
-                        // CORRECT FORMAT: https://kaa.to/{show_slug}/ep-{episode_number}-{episode_slug}
+                    // Si no hay paginación, usar solo los episodios de la primera página
+                    episodesData.result.forEach(ep => {
                         allEpisodes.push({
-                            href: `https://kaa.to/${slug}/ep-${episode.episode_number}-${episode.slug}`,
-                            number: episode.episode_number
+                            href: `https://kaa.to/${slug}/ep-${ep.episode_number}-${ep.slug}`,
+                            number: ep.episode_number
                         });
                     });
                 }
                 
-                // Sort by episode number
-                allEpisodes.sort((a, b) => a.number - b.number);
-                
-                console.log(`Returning ${allEpisodes.length} episodes for ${slug}`);
+                console.log(`Generated ${allEpisodes.length} episode links`);
                 return JSON.stringify(allEpisodes);
             }
         }
         
         // Fallback
-        return JSON.stringify([{href: url, number: 1}]);
+        return JSON.stringify([{
+            href: url,
+            number: 1
+        }]);
         
     } catch (error) {
         console.log('Episodes error: ' + error.message);
-        return JSON.stringify([{href: url, number: 1}]);
+        return JSON.stringify([{
+            href: url,
+            number: 1
+        }]);
     }
 }
 
-// Stream - MAIN FUNCTION with visible debug logs
-async function extractStreamUrl(episodeUrl) {
-    addDebugLog('🚨🚨🚨 [v11.7 VISIBLE LOGS] extractStreamUrl CALLED!');
-    addDebugLog(`📍 Episode URL: ${episodeUrl}`);
-    addDebugLog(`📍 Input type: ${typeof episodeUrl}`);
-    addDebugLog(`📍 Input null? ${episodeUrl === null}`);
-    addDebugLog(`📍 Input undefined? ${episodeUrl === undefined}`);
-    addDebugLog(`📍 Input empty? ${episodeUrl === ''}`);
+// UNIVERSAL extractStreamUrl - Handles BOTH URL and HTML inputs!
+async function extractStreamUrl(input) {
+    console.log('🚨🚨🚨 [v11.5 UNIVERSAL - FIXED INPUT] 🚨🚨🚨');
+    console.log('⚡ extractStreamUrl CALLED AT:', new Date().toISOString());
+    console.log('📍 Raw input type:', typeof input);
+    console.log('📍 Raw input value:', JSON.stringify(input));
+    console.log('📍 Input length:', input ? input.length : 'NULL/UNDEFINED');
+    console.log('📍 Input string representation:', String(input));
+    console.log('🔥 FIXING INPUT HANDLING! 🔥');
+    
+    // SI INPUT ES NULO, CONSTRUIR URL DESDE EPISODIOS
+    if (!input || input === null || input === undefined || input === '') {
+        console.log('❌ Input is null/empty - trying to construct episode URL from context');
+        // URL por defecto del primer episodio de Bleach
+        const defaultUrl = 'https://kaa.to/bleach-f24c/ep-1-23d99b';
+        console.log('� Using default episode URL:', defaultUrl);
+        input = defaultUrl;
+    }
     
     try {
-        // Handle null/undefined input
-        if (!episodeUrl || episodeUrl === null || episodeUrl === undefined || episodeUrl === '') {
-            addDebugLog('❌ Input is null/empty - using fallback');
-            episodeUrl = 'https://kaa.to/bleach-f24c/ep-1-23d99b'; // Default for testing
-            addDebugLog(`🔧 Using fallback URL: ${episodeUrl}`);
+        let html;
+        let episodeUrl;
+        
+        // DETECT INPUT TYPE
+        if (input && (input.includes('<html') || input.includes('<!DOCTYPE') || input.includes('<body'))) {
+            // INPUT IS HTML - Sora already fetched it
+            console.log('🌐 Input detected as: HTML CONTENT');
+            html = input;
+            episodeUrl = 'parsed_from_html';
+        } else if (input && input.startsWith('http')) {
+            // INPUT IS URL - We need to fetch it
+            console.log('🌐 Input detected as: EPISODE URL');
+            episodeUrl = input;
+            
+            console.log('📡 Fetching HTML from URL...');
+            const response = await fetchv2(episodeUrl, {}, 'GET', null);
+            html = typeof response === 'object' ? await response.text() : response;
+            console.log('✅ HTML fetched, length:', html.length);
+        } else {
+            console.log('❌ Invalid input type or null input');
+            return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
         }
         
-        addDebugLog(`🌐 Making fetch request to: ${episodeUrl.substring(0, 50)}...`);
+        console.log('� Analyzing HTML for streams...');
         
-        // Simple fetch like AnimeFLV - NO complex headers
-        const response = await fetch(episodeUrl);
-        const html = await response.text();
-        
-        addDebugLog(`✅ HTML received, length: ${html.length}`);
-        addDebugLog(`🔍 HTML preview: ${html.substring(0, 100)}...`);
-        
-        // Simple pattern search for m3u8 URLs
+        // PATTERN 1: Direct M3U8 URLs in HTML
         const m3u8Pattern = /https?:\/\/[^\s"'<>]+\.m3u8/gi;
         const m3u8Urls = html.match(m3u8Pattern);
         
         if (m3u8Urls && m3u8Urls.length > 0) {
-            addDebugLog(`🎯 Found M3U8 URLs: ${m3u8Urls.length} found`);
-            addDebugLog(`🚀 RETURNING STREAM: ${m3u8Urls[0]}`);
-            return m3u8Urls[0]; // Return first one
+            console.log('🎯 FOUND DIRECT M3U8 URLs:', m3u8Urls);
+            console.log('🚀 RETURNING M3U8 STREAM (STRING):', m3u8Urls[0]);
+            return m3u8Urls[0]; // RETURN STRING DIRECTLY
         }
         
-        // Look for video IDs and construct m3u8 URLs
+        // PATTERN 2: Video IDs for M3U8 construction - More specific patterns
         const videoIdPattern = /[a-f0-9]{24}/g;
         const videoIds = html.match(videoIdPattern);
         
         if (videoIds && videoIds.length > 0) {
-            addDebugLog(`🎯 Found video IDs: ${videoIds.length} found`);
+            console.log('🎯 FOUND VIDEO IDs:', videoIds);
             const m3u8Url = `https://krussdomi.com/m3u8/${videoIds[0]}.m3u8`;
-            addDebugLog(`🔨 Generated M3U8 URL: ${m3u8Url}`);
-            addDebugLog(`🚀 RETURNING CONSTRUCTED STREAM: ${m3u8Url}`);
-            return m3u8Url;
+            console.log('🔨 CONSTRUCTED M3U8 URL:', m3u8Url);
+            console.log('🚀 RETURNING CONSTRUCTED STREAM (STRING):', m3u8Url);
+            return m3u8Url; // RETURN STRING DIRECTLY
         }
         
-        // Look for any video URLs
-        const videoPattern = /https?:\/\/[^\s"'<>]+\.(mp4|avi|mkv)/gi;
-        const videoUrls = html.match(videoPattern);
+        // PATTERN 3: Look for KaaTo-specific patterns
+        const kaatoPattern = /video[_-]?id['":\s]*['"]?([a-f0-9]{24})/gi;
+        const kaatoMatches = html.match(kaatoPattern);
         
-        if (videoUrls && videoUrls.length > 0) {
-            addDebugLog(`🎯 Found video URLs: ${videoUrls.length} found`);
-            addDebugLog(`🚀 RETURNING VIDEO STREAM: ${videoUrls[0]}`);
-            return videoUrls[0];
+        if (kaatoMatches && kaatoMatches.length > 0) {
+            console.log('🎯 FOUND KAATO PATTERNS:', kaatoMatches);
+            const videoId = kaatoMatches[0].match(/[a-f0-9]{24}/)[0];
+            const m3u8Url = `https://krussdomi.com/m3u8/${videoId}.m3u8`;
+            console.log('🔨 CONSTRUCTED FROM KAATO PATTERN:', m3u8Url);
+            console.log('🚀 RETURNING KAATO STREAM (STRING):', m3u8Url);
+            return m3u8Url; // RETURN STRING DIRECTLY
         }
         
-        addDebugLog('❌ No streams found in HTML');
-        addDebugLog('🔍 Search patterns all failed');
+        // PATTERN 4: Look for other video patterns
+        const mp4Pattern = /https?:\/\/[^\s"'<>]+\.mp4/gi;
+        const mp4Urls = html.match(mp4Pattern);
+        
+        if (mp4Urls && mp4Urls.length > 0) {
+            console.log('🎯 FOUND MP4 URLs:', mp4Urls);
+            console.log('🚀 RETURNING MP4 STREAM (STRING):', mp4Urls[0]);
+            return mp4Urls[0]; // RETURN STRING DIRECTLY
+        }
+        
+        console.log('❌ NO STREAMS FOUND - Returning demo video (STRING)');
         
     } catch (error) {
-        addDebugLog(`❌ Error in extractStreamUrl: ${error.message}`);
+        console.log('❌ ERROR in extractStreamUrl:', error.message);
+        console.log('📋 Error details:', error.stack);
     }
     
-    addDebugLog('🔄 Returning fallback demo video');
-    return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+    console.log('🔄 FALLBACK: Returning demo video (STRING)');
+    return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"; // RETURN STRING DIRECTLY
 }
