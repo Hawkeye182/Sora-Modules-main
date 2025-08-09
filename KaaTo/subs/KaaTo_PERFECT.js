@@ -1,4 +1,4 @@
-// KaaTo Perfect Extension v10.2 - JSON Diagnosis
+// KaaTo Perfect Extension v10.3 - Advanced Diagnostic System
 // Search - Del original que funciona
 async function searchResults(keyword) {
     try {
@@ -237,14 +237,51 @@ async function extractStreamUrl(episodeUrl) {
                 console.log(`🔍 Testing pattern: ${patternObj.name}`);
                 const match = html.match(patternObj.regex);
                 if (match) {
-                    console.log(`✅ Match found for ${patternObj.name}! Raw data:`, match[1].substring(0, 200) + '...');
+                    const rawData = match[1];
+                    console.log(`✅ Match found for ${patternObj.name}!`);
+                    console.log(`📊 Data length: ${rawData.length} characters`);
+                    console.log(`🔍 First 300 chars: ${rawData.substring(0, 300)}`);
+                    console.log(`🔍 Last 100 chars: ${rawData.substring(Math.max(0, rawData.length - 100))}`);
+                    
                     try {
-                        serverData = JSON.parse(match[1]);
+                        serverData = JSON.parse(rawData);
                         foundPattern = patternObj.name;
                         console.log('✅ Successfully parsed server data for', patternObj.name, ':', serverData);
                         break;
                     } catch (e) {
-                        console.log(`❌ Failed to parse JSON for ${patternObj.name}:`, e.message);
+                        console.log(`❌ JSON Parse Error for ${patternObj.name}:`, e.message);
+                        console.log(`🔧 Attempting auto-repair...`);
+                        
+                        // Auto-repair attempts
+                        let cleanedData = rawData;
+                        
+                        // Remove trailing commas
+                        cleanedData = cleanedData.replace(/,(\s*[}\]])/g, '$1');
+                        
+                        // Fix unquoted keys
+                        cleanedData = cleanedData.replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":');
+                        
+                        // Convert single quotes to double quotes
+                        cleanedData = cleanedData.replace(/'/g, '"');
+                        
+                        // Remove extra spaces around brackets
+                        cleanedData = cleanedData.replace(/\s*([{}[\]])\s*/g, '$1');
+                        
+                        console.log(`🛠️ Cleaned data (first 300 chars): ${cleanedData.substring(0, 300)}`);
+                        
+                        try {
+                            serverData = JSON.parse(cleanedData);
+                            foundPattern = patternObj.name + ' (auto-repaired)';
+                            console.log('✅ Auto-repair successful! Parsed data:', serverData);
+                            break;
+                        } catch (e2) {
+                            console.log(`❌ Auto-repair failed:`, e2.message);
+                            console.log(`🔍 Character analysis around position ${e2.message.match(/\d+/)?.[0] || 'unknown'}:`);
+                            const pos = parseInt(e2.message.match(/\d+/)?.[0]) || 0;
+                            const start = Math.max(0, pos - 50);
+                            const end = Math.min(cleanedData.length, pos + 50);
+                            console.log(`Context: "${cleanedData.substring(start, end)}"`);
+                        }
                     }
                 } else {
                     console.log(`❌ No match found for ${patternObj.name}`);
@@ -420,8 +457,95 @@ async function extractStreamUrl(episodeUrl) {
                 }
             }
             
-            // Estrategia 5: Buscar patrones de URL directamente en el HTML
-            console.log('🔍 Strategy 5: Searching for direct URL patterns in HTML...');
+            // Estrategia 5: Análisis profundo de datos en kaa.to
+            console.log('🔍 Strategy 5: Deep KAA.to data analysis...');
+            
+            // Buscar patrones específicos de kaa.to con más contexto
+            const kaaPatterns = [
+                { name: 'servers array bracket', regex: /servers\s*:\s*(\[[^\]]*\])/gi },
+                { name: 'servers with quotes', regex: /"servers"\s*:\s*(\[[^\]]*\])/gi },
+                { name: 'javascript servers', regex: /var\s+servers\s*=\s*(\[[^\]]*\])/gi },
+                { name: 'window servers', regex: /window\.servers\s*=\s*(\[[^\]]*\])/gi },
+                { name: 'data servers', regex: /data-servers\s*=\s*["']([^"']*?)["']/gi },
+                { name: 'json servers block', regex: /"servers"\s*:\s*\[([^\]]+)\]/gi }
+            ];
+            
+            for (const pattern of kaaPatterns) {
+                console.log(`🔍 Testing KAA pattern: ${pattern.name}`);
+                const match = pattern.regex.exec(html);
+                if (match) {
+                    const rawData = match[1];
+                    console.log(`✅ ${pattern.name} found! Data length: ${rawData.length}`);
+                    console.log(`📄 Complete data: ${rawData}`);
+                    
+                    // Intentar extraer directamente URLs de m3u8
+                    const directUrls = rawData.match(/https:\/\/[^"'\s,\]]+\.m3u8/g);
+                    if (directUrls) {
+                        console.log(`🎯 Found ${directUrls.length} direct m3u8 URLs`);
+                        for (const url of directUrls) {
+                            if (await testUrl(url)) {
+                                return url;
+                            }
+                        }
+                    }
+                    
+                    // Intentar parsear como JSON
+                    try {
+                        const fullJson = `[${rawData}]`;
+                        console.log(`🧪 Attempting to parse as array: ${fullJson.substring(0, 200)}...`);
+                        const parsed = JSON.parse(fullJson);
+                        console.log(`✅ Successfully parsed as array:`, parsed);
+                        
+                        // Buscar URLs en el array parseado
+                        const foundUrls = findUrlsInObject(parsed);
+                        if (foundUrls.length > 0) {
+                            console.log(`🎯 Found ${foundUrls.length} URLs in parsed array`);
+                            for (const url of foundUrls) {
+                                if (await testUrl(url)) {
+                                    return url;
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.log(`❌ Array parse failed: ${e.message}`);
+                        
+                        // Buscar IDs de video específicos
+                        const videoIds = rawData.match(/[a-f0-9]{24}/g);
+                        if (videoIds) {
+                            console.log(`🎯 Found ${videoIds.length} potential video IDs`);
+                            for (const videoId of videoIds) {
+                                const m3u8Url = `https://krussdomi.com/m3u8/${videoId}.m3u8`;
+                                console.log(`🧪 Testing generated m3u8: ${m3u8Url}`);
+                                if (await testUrl(m3u8Url)) {
+                                    return m3u8Url;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Estrategia 6: Búsqueda exhaustiva en todo el HTML
+            console.log('🔍 Strategy 6: Exhaustive HTML search...');
+            
+            // Buscar todos los posibles IDs de video en el HTML completo
+            const allVideoIds = html.match(/[a-f0-9]{24}/g);
+            if (allVideoIds) {
+                console.log(`🎯 Found ${allVideoIds.length} potential video IDs in entire HTML`);
+                const uniqueIds = [...new Set(allVideoIds)]; // Eliminar duplicados
+                console.log(`🎯 Unique video IDs: ${uniqueIds.length}`);
+                
+                for (const videoId of uniqueIds.slice(0, 5)) { // Probar solo los primeros 5
+                    const m3u8Url = `https://krussdomi.com/m3u8/${videoId}.m3u8`;
+                    console.log(`🧪 Testing video ID: ${videoId}`);
+                    if (await testUrl(m3u8Url)) {
+                        return m3u8Url;
+                    }
+                }
+            }
+            
+            // Estrategia 7: Buscar patrones de URL directamente en el HTML
+            console.log('🔍 Strategy 7: Searching for direct URL patterns in HTML...');
             const urlPatterns = [
                 /https:\/\/krussdomi\.com\/m3u8\/[a-f0-9]{24}\.m3u8/g,
                 /https:\/\/[^"'<>\s]+\.m3u8/g,
