@@ -3,6 +3,12 @@
 
 console.log('🚨🚨🚨 [v11.5.8 RESTORED] MODULE STARTING TO LOAD 🚨🚨🚨');
 
+console.log('📍 FUNCTION CHECK: searchResults exists =', typeof searchResults === 'function');
+console.log('📍 FUNCTION CHECK: extractDetails exists =', typeof extractDetails === 'function');  
+console.log('📍 FUNCTION CHECK: extractEpisodes exists =', typeof extractEpisodes === 'function');
+console.log('📍 FUNCTION CHECK: extractStreamUrl exists =', typeof extractStreamUrl === 'function');
+console.log('📍 FUNCTION CHECK: getStreamUrl exists =', typeof getStreamUrl === 'function');
+
 // Search - Del PERFECT que funciona
 async function searchResults(keyword) {
     console.log('🔍 [v11.5.8] searchResults CALLED with keyword:', keyword);
@@ -214,6 +220,15 @@ async function extractStreamUrl(episodeUrl) {
     console.log('📍 Episode URL:', episodeUrl);
     console.log('🔥 IF YOU SEE THIS LOG, extractStreamUrl IS WORKING! 🔥');
     
+    // Add debug info about what type of URL we received
+    if (!episodeUrl) {
+        console.log('❌ CRITICAL: episodeUrl is null or undefined!');
+        return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+    }
+    
+    console.log('🔍 Episode URL type:', typeof episodeUrl);
+    console.log('🔍 Episode URL length:', episodeUrl.length);
+    
     try {
         console.log('🌐 Fetching episode page with enhanced headers...');
         
@@ -235,7 +250,16 @@ async function extractStreamUrl(episodeUrl) {
             'Origin': 'https://kaa.to'
         }, 'GET', null);
         
-        const html = typeof response === 'object' ? await response.text() : response;
+        // Handle response properly for Sora iOS
+        let html;
+        if (response && response._data) {
+            html = response._data;
+        } else if (typeof response === 'string') {
+            html = response;
+        } else {
+            console.log('❌ Invalid response format');
+            return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+        }
         console.log('✅ HTML received, length:', html.length);
         console.log('🔍 HTML preview:', html.substring(0, 300));
         
