@@ -186,33 +186,128 @@ async function extractEpisodes(url) {
     }
 }
 
-// Stream - Demo sin Cloudflare
+// Stream - Intentar bypass de Cloudflare con múltiples estrategias
 async function extractStreamUrl(episodeUrl) {
+    console.log('Extracting stream from URL: ' + episodeUrl);
+    
     try {
-        console.log('Extracting demo stream for episode:', episodeUrl);
+        // Estrategia 1: Intentar obtener la página del episodio con headers anti-Cloudflare
+        const pageResponse = await fetchv2(episodeUrl, {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+            'Sec-Ch-Ua-Mobile': '?0',
+            'Sec-Ch-Ua-Platform': '"Windows"',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'same-origin',
+            'Sec-Fetch-User': '?1',
+            'Upgrade-Insecure-Requests': '1',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': 'https://kaa.to/',
+            'Origin': 'https://kaa.to'
+        });
         
-        // Extraer información del episodio para dar una respuesta más variada
+        if (pageResponse && pageResponse.status === 200 && pageResponse._data) {
+            console.log('✅ Successfully loaded episode page');
+            
+            // Buscar window.KAA en el HTML
+            const html = pageResponse._data;
+            const kaaMatch = html.match(/window\.KAA\s*=\s*({.*?});/s);
+            
+            if (kaaMatch) {
+                console.log('✅ Found window.KAA data');
+                
+                try {
+                    const kaaData = JSON.parse(kaaMatch[1]);
+                    console.log('KAA servers found:', kaaData.servers ? kaaData.servers.length : 0);
+                    
+                    if (kaaData.servers && kaaData.servers.length > 0) {
+                        // Intentar con el primer servidor disponible
+                        const firstServer = kaaData.servers[0];
+                        console.log('Trying first server:', firstServer);
+                        
+                        // Extraer video ID del servidor
+                        const videoIdMatch = firstServer.match(/\/([a-f0-9]{24})$/);
+                        
+                        if (videoIdMatch) {
+                            const videoId = videoIdMatch[1];
+                            console.log('Video ID extracted:', videoId);
+                            
+                            // Estrategia 2: Intentar diferentes dominios de krussdomi
+                            const kruDomains = [
+                                'krussdomi.com',
+                                'www.krussdomi.com',
+                                'cdn.krussdomi.com',
+                                'stream.krussdomi.com'
+                            ];
+                            
+                            for (const domain of kruDomains) {
+                                const m3u8Url = `https://${domain}/m3u8/${videoId}.m3u8`;
+                                console.log(`Trying domain: ${domain}`);
+                                
+                                try {
+                                    const testResponse = await fetchv2(m3u8Url, {
+                                        'Accept': 'application/vnd.apple.mpegurl, application/x-mpegurl, */*',
+                                        'Accept-Language': 'en-US,en;q=0.9',
+                                        'Cache-Control': 'no-cache',
+                                        'Origin': 'https://kaa.to',
+                                        'Referer': 'https://kaa.to/',
+                                        'Sec-Fetch-Dest': 'empty',
+                                        'Sec-Fetch-Mode': 'cors',
+                                        'Sec-Fetch-Site': 'cross-site',
+                                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                                    });
+                                    
+                                    if (testResponse && testResponse.status === 200 && testResponse._data && testResponse._data.includes('#EXTM3U')) {
+                                        console.log(`✅ SUCCESS! Working M3U8 found on ${domain}`);
+                                        return m3u8Url;
+                                    }
+                                } catch (domainError) {
+                                    console.log(`❌ Domain ${domain} failed:`, domainError.message);
+                                }
+                            }
+                            
+                            // Estrategia 3: Intentar el servidor directo sin M3U8
+                            console.log('🔄 Trying direct server URL as fallback');
+                            return firstServer;
+                        }
+                    }
+                } catch (parseError) {
+                    console.log('❌ Error parsing KAA data:', parseError.message);
+                }
+            } else {
+                console.log('❌ No window.KAA found in page HTML');
+            }
+        } else {
+            console.log('❌ Failed to load episode page. Status:', pageResponse ? pageResponse.status : 'null');
+            
+            if (pageResponse && pageResponse.status === 403) {
+                console.log('🚫 Cloudflare blocked the request (403)');
+            } else if (pageResponse && pageResponse.status === 503) {
+                console.log('🚫 Service unavailable (503) - likely Cloudflare protection');
+            }
+        }
+        
+        // Fallback final: usar video demo si todo falla
+        console.log('🔄 All strategies failed, using demo video');
         const episodeMatch = episodeUrl.match(/ep-(\d+)/);
         const episodeNumber = episodeMatch ? parseInt(episodeMatch[1]) : 1;
         
-        // Usar diferentes streams de demo basados en el número de episodio
-        const streamOptions = [
+        const demoStreams = [
             "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
             "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
             "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-            "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
             "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4"
         ];
         
-        // Seleccionar stream basado en el número de episodio
-        const streamIndex = (episodeNumber - 1) % streamOptions.length;
-        const selectedStream = streamOptions[streamIndex];
-        
-        console.log(`Selected demo stream ${streamIndex + 1} for episode ${episodeNumber}:`, selectedStream);
-        return selectedStream;
+        return demoStreams[(episodeNumber - 1) % demoStreams.length];
         
     } catch (error) {
-        console.log('Stream error: ' + error.message);
+        console.log('❌ Stream extraction error: ' + error.message);
         return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
     }
 }
