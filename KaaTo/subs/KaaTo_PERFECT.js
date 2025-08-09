@@ -62,7 +62,7 @@ async function extractDetails(url) {
     }
 }
 
-// Episodes - Del STREAM_FIXED que SÍ obtiene todos los episodios
+// Episodes - Del STREAM_FIXED que SÍ obtiene todos los episodios (FORMATO CORREGIDO)
 async function extractEpisodes(url) {
     try {
         const slug = url.split('/anime/')[1] || url.split('/').pop();
@@ -81,8 +81,8 @@ async function extractEpisodes(url) {
                 
                 if (data.pages && data.pages.episodes && data.pages.episodes.length > 0) {
                     const episodes = data.pages.episodes.map(ep => ({
-                        title: `Episode ${ep.episode}`,
-                        href: `https://kaa.to/episode/${ep.id}`
+                        href: `https://kaa.to/episode/${ep.id}`,
+                        number: ep.episode  // ✅ Formato exacto del STREAM_FIXED
                     }));
                     
                     allEpisodes = allEpisodes.concat(episodes);
@@ -102,7 +102,7 @@ async function extractEpisodes(url) {
             await new Promise(resolve => setTimeout(resolve, 100));
         }
         
-        return JSON.stringify(allEpisodes);  // ✅ Todos los episodios
+        return JSON.stringify(allEpisodes);  // ✅ Todos los episodios con formato correcto
     } catch (error) {
         return JSON.stringify([]);
     }
