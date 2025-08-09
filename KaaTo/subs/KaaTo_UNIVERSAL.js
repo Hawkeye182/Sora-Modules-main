@@ -244,8 +244,17 @@ async function extractStreamUrl(input) {
         
         if (m3u8Urls && m3u8Urls.length > 0) {
             console.log('🎯 FOUND DIRECT M3U8 URLs:', m3u8Urls);
-            console.log('🚀 RETURNING M3U8 STREAM (STRING):', m3u8Urls[0]);
-            return m3u8Urls[0]; // RETURN STRING DIRECTLY
+            console.log('🚀 RETURNING M3U8 STREAM WITH HEADERS (JSON)');
+            
+            // Return JSON with URL and headers
+            return JSON.stringify({
+                url: m3u8Urls[0],
+                headers: {
+                    'Referer': 'https://krussdomi.com/',
+                    'Origin': 'https://krussdomi.com',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36'
+                }
+            });
         }
         
         // PATTERN 2: Video IDs for M3U8 construction - CON HEADERS MEJORADOS
@@ -254,10 +263,19 @@ async function extractStreamUrl(input) {
         
         if (videoIds && videoIds.length > 0) {
             console.log('🎯 FOUND VIDEO IDs:', videoIds);
-            const m3u8Url = `https://krussdomi.com/m3u8/${videoIds[0]}.m3u8`;
+            const m3u8Url = `https://hls.krussdomi.com/manifest/${videoIds[0]}/master.m3u8`;
             console.log('🔨 CONSTRUCTED M3U8 URL:', m3u8Url);
-            console.log('🚀 RETURNING CONSTRUCTED STREAM (STRING):', m3u8Url);
-            return m3u8Url; // RETURN STRING DIRECTLY
+            console.log('🚀 RETURNING CONSTRUCTED STREAM WITH HEADERS (JSON)');
+            
+            // Return JSON with URL and headers like working extensions
+            return JSON.stringify({
+                url: m3u8Url,
+                headers: {
+                    'Referer': 'https://krussdomi.com/',
+                    'Origin': 'https://krussdomi.com',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36'
+                }
+            });
         }
         
         // PATTERN 3: Look for KaaTo-specific patterns
@@ -267,10 +285,19 @@ async function extractStreamUrl(input) {
         if (kaatoMatches && kaatoMatches.length > 0) {
             console.log('🎯 FOUND KAATO PATTERNS:', kaatoMatches);
             const videoId = kaatoMatches[0].match(/[a-f0-9]{24}/)[0];
-            const m3u8Url = `https://krussdomi.com/m3u8/${videoId}.m3u8`;
+            const m3u8Url = `https://hls.krussdomi.com/manifest/${videoId}/master.m3u8`;
             console.log('🔨 CONSTRUCTED FROM KAATO PATTERN:', m3u8Url);
-            console.log('🚀 RETURNING KAATO STREAM (STRING):', m3u8Url);
-            return m3u8Url; // RETURN STRING DIRECTLY
+            console.log('🚀 RETURNING KAATO STREAM WITH HEADERS (JSON)');
+            
+            // Return JSON with URL and headers
+            return JSON.stringify({
+                url: m3u8Url,
+                headers: {
+                    'Referer': 'https://krussdomi.com/',
+                    'Origin': 'https://krussdomi.com',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36'
+                }
+            });
         }
         
         // PATTERN 4: Look for other video patterns

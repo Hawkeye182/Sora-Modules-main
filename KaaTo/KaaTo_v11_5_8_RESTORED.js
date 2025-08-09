@@ -213,12 +213,14 @@ async function extractEpisodes(url) {
     }
 }
 
-// Stream - v11.5.8 con master.m3u8 directo para player iOS
+// Stream - v11.5.8 con master.m3u8 directo para player iOS + HEADERS REALES
 async function extractStreamUrl(episodeUrl) {
-    console.log('🚨🚨🚨 [v11.5.8 MASTER PLAYLIST] 🚨🚨🚨');
-    console.log('⚡ extractStreamUrl CALLED AT:', new Date().toISOString());
-    console.log('📍 Episode URL:', episodeUrl);
-    console.log('🔥 IF YOU SEE THIS LOG, extractStreamUrl IS WORKING! 🔥');
+    // ULTRA DEBUG LOGS
+    console.log('🚨🚨🚨🚨🚨 [ULTRA DEBUG] extractStreamUrl EJECUTÁNDOSE 🚨🚨🚨🚨🚨');
+    console.log('⚡⚡⚡ TIMESTAMP:', new Date().toISOString());
+    console.log('📍📍📍 URL RECIBIDA:', episodeUrl);
+    console.log('🔥🔥🔥 SI VES ESTO, LA FUNCIÓN SÍ SE EJECUTA 🔥🔥🔥');
+    console.log('👀👀👀 SEARCHING FOR VIDEO ID IN HTML 👀👀�');
     
     // Add debug info about what type of URL we received
     if (!episodeUrl) {
@@ -232,23 +234,24 @@ async function extractStreamUrl(episodeUrl) {
     try {
         console.log('🌐 Fetching episode page with enhanced headers...');
         
-        // Enhanced headers from F12 discoveries
+        // Enhanced headers from F12 discoveries - HEADERS REALES DEL USUARIO
         const response = await fetchv2(episodeUrl, {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-            'Accept-Language': 'es-419,es;q=0.9',
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache',
-            'sec-ch-ua': '"Not;A=Brand";v="99", "Brave";v="139", "Chromium";v="139"',
-            'sec-ch-ua-mobile': '?0',
-            'sec-ch-ua-platform': '"Windows"',
-            'sec-fetch-dest': 'document',
+            'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'accept-language': 'es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3',
+            'accept-encoding': 'gzip, deflate, br, zstd',
+            'referer': 'https://kaa.to/',
+            'sec-fetch-dest': 'iframe',
             'sec-fetch-mode': 'navigate',
-            'sec-fetch-site': 'same-origin',
-            'sec-gpc': '1',
-            'Referer': 'https://kaa.to/',
-            'Origin': 'https://kaa.to'
+            'sec-fetch-site': 'cross-site',
+            'origin': 'https://krussdomi.com',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'priority': 'u=4'
         }, 'GET', null);
+        
+        console.log('🌐🌐🌐 HEADERS APLICADOS - REFERER:', 'https://kaa.to/');
+        console.log('🎯🎯🎯 SEC-FETCH-DEST APLICADO:', 'iframe');
+        console.log('🎌🎌🎌 SEC-FETCH-SITE APLICADO:', 'cross-site');
+        console.log('🏠🏠🏠 ORIGIN APLICADO:', 'https://krussdomi.com');
         
         // Handle response properly for Sora iOS
         let html;
@@ -268,9 +271,27 @@ async function extractStreamUrl(episodeUrl) {
         const m3u8Urls = html.match(m3u8Pattern);
         
         if (m3u8Urls && m3u8Urls.length > 0) {
-            console.log('🎯 FOUND DIRECT M3U8 URLs:', m3u8Urls);
-            console.log('🚀 RETURNING M3U8 STREAM (STRING):', m3u8Urls[0]);
-            return m3u8Urls[0];
+            console.log('🎯🎯🎯 FOUND DIRECT M3U8 URLs:', m3u8Urls);
+            console.log('🚀🚀🚀 RETURNING M3U8 STREAM WITH ANTI-BLOCK HEADERS (JSON)');
+            
+            // Return JSON with anti-block headers for direct M3U8
+            return JSON.stringify({
+                url: m3u8Urls[0],
+                headers: {
+                    'accept': '*/*',
+                    'accept-language': 'es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3',
+                    'accept-encoding': 'gzip, deflate, br, zstd',
+                    'referer': 'https://kaa.to/',
+                    'sec-fetch-dest': 'empty',
+                    'sec-fetch-mode': 'cors', 
+                    'sec-fetch-site': 'cross-site',
+                    'origin': 'https://kaa.to',
+                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'priority': 'u=1, i',
+                    'x-requested-with': 'XMLHttpRequest',
+                    'cache-control': 'no-cache'
+                }
+            });
         }
         
         // PATTERN 2: Buscar source.php patterns (de los descubrimientos F12)
@@ -278,14 +299,32 @@ async function extractStreamUrl(episodeUrl) {
         const sourceMatches = html.match(sourcePattern);
         
         if (sourceMatches && sourceMatches.length > 0) {
-            console.log('🎯 FOUND source.php patterns:', sourceMatches);
+            console.log('🎯🎯🎯 FOUND source.php patterns:', sourceMatches);
             const videoIdMatch = sourceMatches[0].match(/id=([a-f0-9]{24})/);
             if (videoIdMatch) {
                 const videoId = videoIdMatch[1];
                 const masterUrl = `https://hls.krussdomi.com/manifest/${videoId}/master.m3u8`;
-                console.log('🔨 CONSTRUCTED MASTER M3U8:', masterUrl);
-                console.log('🚀 RETURNING MASTER STREAM (STRING):', masterUrl);
-                return masterUrl;
+                console.log('🔨🔨🔨 CONSTRUCTED MASTER M3U8:', masterUrl);
+                console.log('🚀🚀🚀 RETURNING MASTER STREAM WITH ANTI-BLOCK HEADERS (JSON)');
+                
+                // Return JSON with anti-block headers
+                return JSON.stringify({
+                    url: masterUrl,
+                    headers: {
+                        'accept': '*/*',
+                        'accept-language': 'es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3',
+                        'accept-encoding': 'gzip, deflate, br, zstd',
+                        'referer': 'https://kaa.to/',
+                        'sec-fetch-dest': 'empty',
+                        'sec-fetch-mode': 'cors', 
+                        'sec-fetch-site': 'cross-site',
+                        'origin': 'https://kaa.to',
+                        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                        'priority': 'u=1, i',
+                        'x-requested-with': 'XMLHttpRequest',
+                        'cache-control': 'no-cache'
+                    }
+                });
             }
         }
         
@@ -294,11 +333,32 @@ async function extractStreamUrl(episodeUrl) {
         const videoIds = html.match(videoIdPattern);
         
         if (videoIds && videoIds.length > 0) {
-            console.log('🎯 FOUND VIDEO IDs:', videoIds);
+            console.log('🎯🎯🎯 FOUND VIDEO IDs:', videoIds);
+            console.log('🥇🥇🥇 PRIMER VIDEO ID SELECCIONADO:', videoIds[0]);
+            console.log('🏗️🏗️🏗️ CONSTRUYENDO M3U8 URL...');
+            
             const masterUrl = `https://hls.krussdomi.com/manifest/${videoIds[0]}/master.m3u8`;
-            console.log('🔨 CONSTRUCTED M3U8 URL:', masterUrl);
-            console.log('🚀 RETURNING CONSTRUCTED STREAM (STRING):', masterUrl);
-            return masterUrl;
+            console.log('🔨🔨🔨 CONSTRUCTED M3U8 URL:', masterUrl);
+            console.log('🚀🚀🚀 RETURNING CONSTRUCTED STREAM WITH REAL HEADERS (JSON)');
+            
+            // Return JSON with exact headers from working session - ANTI-BLOCK HEADERS
+            return JSON.stringify({
+                url: masterUrl,
+                headers: {
+                    'accept': '*/*',
+                    'accept-language': 'es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3',
+                    'accept-encoding': 'gzip, deflate, br, zstd',
+                    'referer': 'https://kaa.to/',
+                    'sec-fetch-dest': 'empty',
+                    'sec-fetch-mode': 'cors', 
+                    'sec-fetch-site': 'cross-site',
+                    'origin': 'https://kaa.to',
+                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'priority': 'u=1, i',
+                    'x-requested-with': 'XMLHttpRequest',
+                    'cache-control': 'no-cache'
+                }
+            });
         }
         
         // PATTERN 4: Look for KaaTo-specific patterns
@@ -324,14 +384,17 @@ async function extractStreamUrl(episodeUrl) {
             return mp4Urls[0];
         }
         
-        console.log('❌ No streams found - returning demo video');
+        console.log('❌❌❌ NO STREAMS FOUND - RETURNING DEMO VIDEO ❌❌❌');
+        console.log('🎭🎭🎭 CHECKED PATTERNS: M3U8, SOURCE.PHP, VIDEO IDs, MP4 🎭🎭🎭');
         
     } catch (error) {
-        console.log('❌ ERROR in extractStreamUrl:', error.message);
-        console.log('📋 Error details:', error.stack);
+        console.log('❌❌❌ ERROR in extractStreamUrl:', error.message);
+        console.log('📋📋📋 Error details:', error.stack);
+        console.log('💥💥💥 FETCH FAILED OR HTML PARSING FAILED 💥💥💥');
     }
     
-    console.log('🔄 Returning fallback demo video');
+    console.log('🔄🔄🔄 RETURNING FALLBACK DEMO VIDEO 🔄🔄🔄');
+    console.log('🚨🚨🚨 SI VES ESTO, LA FUNCIÓN LLEGÓ AL FINAL 🚨🚨🚨');
     return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 }
 
@@ -342,3 +405,12 @@ async function getStreamUrl(episodeUrl) {
 }
 
 console.log('✅ [v11.5.8] MODULE FULLY LOADED - EPISODES API FIXED!');
+
+// Export functions for testing
+if (typeof global !== 'undefined') {
+    global.searchResults = searchResults;
+    global.extractDetails = extractDetails;
+    global.extractEpisodes = extractEpisodes;
+    global.extractStreamUrl = extractStreamUrl;
+    global.getStreamUrl = getStreamUrl;
+}
