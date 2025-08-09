@@ -36,47 +36,29 @@ async function searchResults(keyword) {
     }
 }
 
-// Details
+// Details - EXACTO como SIMPLE_TEST que SÍ funciona
 async function extractDetails(url) {
     try {
-        const slug = url.split('/').pop();
+        const slug = url.split('/anime/')[1] || url.split('/').pop();
         const response = await fetchv2(`https://kaa.to/api/show/${slug}`);
         
-        if (response && response.status === 200 && response._data) {
-            let data = response._data;
-            if (typeof data === 'string') {
-                data = JSON.parse(data);
+        if (response && response._data) {
+            let details = response._data;
+            if (typeof details === 'string') {
+                details = JSON.parse(details);
             }
             
-            if (data && data.result) {
-                const result = {
-                    description: data.result.synopsis || 'No description available',
-                    aliases: data.result.title_en || data.result.title || '',
-                    airdate: data.result.premiered || 'Unknown'
-                };
-                
-                return JSON.stringify([result]);
-            } else {
-                return JSON.stringify([{
-                    description: 'Error loading details',
-                    aliases: '',
-                    airdate: 'Unknown'
-                }]);
-            }
-        } else {
-            return JSON.stringify([{
-                description: 'Error loading details - no response',
-                aliases: '',
-                airdate: 'Unknown'
-            }]);
+            const result = {
+                description: details.synopsis || details.description || "Sin descripción disponible",
+                aliases: [details.title_en, details.title_original].filter(title => title && title !== details.title).join(', ') || '',
+                airdate: details.year ? `Año: ${details.year}` : 'Aired: Unknown'
+            };
+            
+            return JSON.stringify([result]);
         }
+        return JSON.stringify([{description: "Error obteniendo detalles", aliases: "", airdate: "Aired: Unknown"}]);
     } catch (error) {
-        console.log('Details error: ' + error.message);
-        return JSON.stringify([{
-            description: 'Error loading details',
-            aliases: '',
-            airdate: 'Unknown'
-        }]);
+        return JSON.stringify([{description: 'Error: ' + error.message, aliases: '', airdate: 'Aired: Unknown'}]);
     }
 }
 

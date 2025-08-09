@@ -6,7 +6,7 @@
         "icon": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
         "url": "https://github.com/Hawkeye182/Sora-Modules-main"
     },
-    "version": "8.4.0",
+    "version": "8.5.0",
     "language": "subs",
     "streamType": "HLS",
     "quality": "1080p",
@@ -14,7 +14,7 @@
     "downloadSupport": true,
     "baseUrl": "https://kaa.to/",
     "searchBaseUrl": "https://kaa.to/api/search",
-    "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo_PERFECT.js?v=8.4.0",
+    "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo_PERFECT.js?v=8.5.0",
     "asyncJS": true,
     "streamAsyncJS": true,
     "softsub": true
