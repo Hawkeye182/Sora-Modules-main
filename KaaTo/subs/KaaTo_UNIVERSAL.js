@@ -1,16 +1,21 @@
-// KaaTo Universal v11.7 - LOG DISPLAY IN SEARCH
-// Global variable to store logs for display
-let debugLogs = [];
+// KaaTo Universal v11.7 - EACH LOG AS SEPARATE RESULT
+// Global variable to store debug results
+let debugResults = [];
 
 function addDebugLog(message) {
-    const timestamp = new Date().toISOString().substr(11, 8);
-    const logEntry = `[${timestamp}] ${message}`;
-    debugLogs.push(logEntry);
-    console.log(logEntry);
+    const timestamp = new Date().toLocaleTimeString();
+    const debugResult = {
+        title: `🔧 DEBUG [${timestamp}]`,
+        subtitle: message,
+        image: 'https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/logo.png',
+        url: 'debug://log'
+    };
+    debugResults.push(debugResult);
+    console.log(`[${timestamp}] ${message}`);
     
-    // Keep only last 10 logs to avoid memory issues
-    if (debugLogs.length > 10) {
-        debugLogs.shift();
+    // Keep only last 15 debug results to avoid memory issues
+    if (debugResults.length > 15) {
+        debugResults.shift();
     }
 }
 
@@ -69,12 +74,11 @@ async function searchResults(keyword) {
                     href: `https://kaa.to/anime/${item.slug}`
                 }));
                 
-                // ADD DEBUG LOG DISPLAY ITEM
-                if (debugLogs.length > 0) {
-                    results.unshift({
-                        title: "🔍 DEBUG LOGS - KaaTo Universal v11.7",
-                        image: "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
-                        href: `DEBUG_LOGS: ${debugLogs.join(' | ')}`
+                // ADD DEBUG RESULTS AS SEPARATE ITEMS
+                if (debugResults.length > 0) {
+                    // Add each debug result as a separate search result
+                    debugResults.forEach(debugResult => {
+                        results.unshift(debugResult);
                     });
                 }
                 
