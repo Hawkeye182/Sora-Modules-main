@@ -335,4 +335,10 @@ async function extractStreamUrl(episodeUrl) {
     return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 }
 
+// COMPATIBILITY: Define getStreamUrl as alias to extractStreamUrl
+async function getStreamUrl(episodeUrl) {
+    console.log('🔄 getStreamUrl called, redirecting to extractStreamUrl...');
+    return await extractStreamUrl(episodeUrl);
+}
+
 console.log('✅ [v11.5.8] MODULE FULLY LOADED - EPISODES API FIXED!');
