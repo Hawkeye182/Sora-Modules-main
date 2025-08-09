@@ -238,8 +238,25 @@ async function extractStreamUrl(url) {
                     console.log('Found server URL:', serverUrl);
                     
                     // Extraer el ID del video de la URL del servidor
+                    console.log('Server URL for ID extraction:', serverUrl);
+                    let videoId = null;
+                    
+                    // Método 1: Parámetro 'v' en la URL
                     const urlParams = new URL(serverUrl);
-                    const videoId = urlParams.searchParams.get('id');
+                    videoId = urlParams.searchParams.get('v');
+                    
+                    // Método 2: Si no hay 'v', buscar 'id'
+                    if (!videoId) {
+                        videoId = urlParams.searchParams.get('id');
+                    }
+                    
+                    // Método 3: Extraer de la ruta si es necesario
+                    if (!videoId) {
+                        const pathMatch = serverUrl.match(/\/([a-f0-9]{24})/);
+                        if (pathMatch) {
+                            videoId = pathMatch[1];
+                        }
+                    }
                     
                     if (videoId) {
                         console.log('Extracted video ID:', videoId);
@@ -265,29 +282,38 @@ async function extractStreamUrl(url) {
                             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36'
                         });
                         
-                        if (m3u8Response && m3u8Response.status === 200) {
-                            console.log('M3U8 successful! Returning master playlist URL');
+                        console.log('M3U8 response status:', m3u8Response ? m3u8Response.status : 'null');
+                        if (m3u8Response && m3u8Response._data) {
+                            console.log('M3U8 data preview:', m3u8Response._data.substring(0, 100));
+                        }
+                        
+                        if (m3u8Response && m3u8Response.status === 200 && m3u8Response._data && m3u8Response._data.includes('#EXTM3U')) {
+                            console.log('✅ SUCCESS! Valid M3U8 found, returning:', m3u8Url);
                             return m3u8Url;
                         } else {
-                            console.log('M3U8 failed with status:', m3u8Response ? m3u8Response.status : 'no response');
+                            console.log('❌ M3U8 failed or invalid. Status:', m3u8Response ? m3u8Response.status : 'no response');
                             
-                            // Si M3U8 falla, intentar acceder al player directamente
-                            console.log('Trying direct player URL as fallback');
+                            // Si M3U8 falla, retornar la URL del servidor como fallback
+                            console.log('🔄 Returning server URL as fallback:', serverUrl);
                             return serverUrl;
                         }
+                    } else {
+                        console.log('❌ Could not extract video ID from server URL');
+                        return serverUrl; // Retornar URL del servidor si no se puede extraer ID
                     }
                 }
             } else {
                 console.log('No servers array found in window.KAA');
+                // Retornar null para que Sora maneje el error
+                return null;
             }
+        } else {
+            console.log('Failed to fetch episode page');
+            return null;
         }
-        
-        // Si falló todo, usar el fallback
-        console.log('All attempts failed, returning fallback');
-        return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
         
     } catch (error) {
         console.log('Stream error: ' + error.message);
-        return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+        return null;
     }
 }
