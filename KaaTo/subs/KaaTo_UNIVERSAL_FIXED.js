@@ -196,12 +196,12 @@ async function extractEpisodes(url) {
     }
 }
 
-// Stream - v11.4 que funcionaba + solo mejoras en headers para autorización
+// Stream - v11.4 con descubrimientos del navegador F12
 async function extractStreamUrl(input) {
-    console.log('🚨🚨🚨 [v11.4 FIXED - ENHANCED HEADERS] 🚨🚨🚨');
+    console.log('🚨🚨🚨 [v11.4 FIXED - F12 DISCOVERIES] 🚨🚨🚨');
     console.log('⚡ extractStreamUrl CALLED AT:', new Date().toISOString());
     console.log('📍 Input received:', typeof input, input && input.length > 500 ? 'HTML_CONTENT' : input);
-    console.log('🔥 RETURNING STRING LIKE ANIMEFLV! 🔥');
+    console.log('🔥 USING F12 DISCOVERIES! 🔥');
     
     try {
         let html;
@@ -214,29 +214,37 @@ async function extractStreamUrl(input) {
             html = input;
             episodeUrl = 'parsed_from_html';
         } else if (input && input.startsWith('http')) {
-            // INPUT IS URL - We need to fetch it
+            // INPUT IS URL - We need to fetch it with discovered headers
             console.log('🌐 Input detected as: EPISODE URL');
             episodeUrl = input;
             
-            console.log('📡 Fetching HTML from URL...');
+            console.log('📡 Fetching HTML with discovered headers...');
             const response = await fetchv2(episodeUrl, {
-                'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.5',
+                'Accept-Language': 'es-419,es;q=0.9',
                 'Accept-Encoding': 'gzip, deflate',
                 'Origin': 'https://kaa.to',
                 'Referer': 'https://kaa.to/',
+                'sec-ch-ua': '"Not;A=Brand";v="99", "Brave";v="139", "Chromium";v="139"',
+                'sec-ch-ua-mobile': '?0',
+                'sec-ch-ua-platform': '"Windows"',
+                'sec-fetch-dest': 'document',
+                'sec-fetch-mode': 'navigate',
+                'sec-fetch-site': 'same-origin',
+                'sec-gpc': '1',
                 'Connection': 'keep-alive',
-                'Upgrade-Insecure-Requests': '1'
+                'Upgrade-Insecure-Requests': '1',
+                'Cookie': 'token=eyJhbGciOiJIUzI1NiJ9.eyJ1aWQiOiI2Nzk2MmI0MmE1NmVhMDhiMTBjODEzZDciLCJ1c2VybmFtZSI6Imhhd2siLCJlbWFpbCI6ImJyb2FuZHNpc21pbmlvbmVyc0BnbWFpbC5jb20iLCJhdWQiOiJwdWJsaWMiLCJleHAiOjE3NjE1MTE2ODJ9.ezjAqvCbCghRBJTupFgfO9dI_3cv4msLK5thsORuLb4'
             }, 'GET', null);
             html = typeof response === 'object' ? await response.text() : response;
-            console.log('✅ HTML fetched, length:', html.length);
+            console.log('✅ HTML fetched with auth token, length:', html.length);
         } else {
             console.log('❌ Invalid input type or null input');
             return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
         }
         
-        console.log('🔍 Analyzing HTML for streams...');
+        console.log('🔍 Analyzing HTML for video IDs...');
         
         // PATTERN 1: Direct M3U8 URLs in HTML
         const m3u8Pattern = /https?:\/\/[^\s"'<>]+\.m3u8/gi;
@@ -248,16 +256,19 @@ async function extractStreamUrl(input) {
             return m3u8Urls[0]; // RETURN STRING DIRECTLY
         }
         
-        // PATTERN 2: Video IDs for M3U8 construction - CON HEADERS MEJORADOS
+        // PATTERN 2: Video IDs - NUEVA ARQUITECTURA DESCUBIERTA
         const videoIdPattern = /[a-f0-9]{24}/g;
         const videoIds = html.match(videoIdPattern);
         
         if (videoIds && videoIds.length > 0) {
             console.log('🎯 FOUND VIDEO IDs:', videoIds);
-            const m3u8Url = `https://krussdomi.com/m3u8/${videoIds[0]}.m3u8`;
-            console.log('🔨 CONSTRUCTED M3U8 URL:', m3u8Url);
-            console.log('🚀 RETURNING CONSTRUCTED STREAM (STRING):', m3u8Url);
-            return m3u8Url; // RETURN STRING DIRECTLY
+            const videoId = videoIds[0];
+            
+            // NUEVA URL DESCUBIERTA: hls.krussdomi.com en lugar de krussdomi.com/m3u8
+            const newM3u8Url = `https://hls.krussdomi.com/manifest/${videoId}/master.m3u8`;
+            console.log('🔨 CONSTRUCTED NEW M3U8 URL:', newM3u8Url);
+            console.log('🚀 RETURNING NEW STREAM FORMAT (STRING):', newM3u8Url);
+            return newM3u8Url; // RETURN STRING DIRECTLY
         }
         
         // PATTERN 3: Look for KaaTo-specific patterns
@@ -267,10 +278,10 @@ async function extractStreamUrl(input) {
         if (kaatoMatches && kaatoMatches.length > 0) {
             console.log('🎯 FOUND KAATO PATTERNS:', kaatoMatches);
             const videoId = kaatoMatches[0].match(/[a-f0-9]{24}/)[0];
-            const m3u8Url = `https://krussdomi.com/m3u8/${videoId}.m3u8`;
-            console.log('🔨 CONSTRUCTED FROM KAATO PATTERN:', m3u8Url);
-            console.log('🚀 RETURNING KAATO STREAM (STRING):', m3u8Url);
-            return m3u8Url; // RETURN STRING DIRECTLY
+            const newM3u8Url = `https://hls.krussdomi.com/manifest/${videoId}/master.m3u8`;
+            console.log('🔨 CONSTRUCTED FROM KAATO PATTERN (NEW FORMAT):', newM3u8Url);
+            console.log('🚀 RETURNING KAATO STREAM (NEW FORMAT):', newM3u8Url);
+            return newM3u8Url; // RETURN STRING DIRECTLY
         }
         
         // PATTERN 4: Look for other video patterns
