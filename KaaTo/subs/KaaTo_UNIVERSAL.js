@@ -1,6 +1,46 @@
 // KaaTo Universal Extension v11.0 - SORA COMPATIBLE (HTML+URL Support)
 // Exact copy of PERFECT functions with UNIVERSAL extractStreamUrl
 
+console.log('🚨🚨🚨 [UNIVERSAL DEBUG] MODULE LOADED AT:', new Date().toISOString());
+
+// =============================================================================
+// DEBUG: INTERCEPT ALL POSSIBLE SORA CALLS
+// =============================================================================
+
+// Method 2: Alternative names Sora might use
+async function getStreamUrl(input) {
+    console.log('🎯 [METHOD 2] getStreamUrl called with:', typeof input);
+    console.log('📝 Input preview:', input ? input.substring(0, 100) + '...' : 'null');
+    return await extractStreamUrl(input);
+}
+
+// Method 3: Another possible name
+async function fetchStream(input) {
+    console.log('🎯 [METHOD 3] fetchStream called with:', typeof input);
+    console.log('📝 Input preview:', input ? input.substring(0, 100) + '...' : 'null');
+    return await extractStreamUrl(input);
+}
+
+// Method 4: Stream URL
+async function streamUrl(input) {
+    console.log('🎯 [METHOD 4] streamUrl called with:', typeof input);
+    console.log('📝 Input preview:', input ? input.substring(0, 100) + '...' : 'null');
+    return await extractStreamUrl(input);
+}
+
+// Method 5: Get Stream
+async function getStream(input) {
+    console.log('🎯 [METHOD 5] getStream called with:', typeof input);
+    console.log('📝 Input preview:', input ? input.substring(0, 100) + '...' : 'null');
+    return await extractStreamUrl(input);
+}
+
+console.log('🎯 [DEBUG] ALL INTERCEPT FUNCTIONS LOADED - Ready to catch ANY call!');
+
+// =============================================================================
+// END DEBUG CODE
+// =============================================================================
+
 // Search - Del PERFECT que funciona EXACTO
 async function searchResults(keyword) {
     console.log('🔍 [v11.0] searchResults CALLED with keyword:', keyword);
