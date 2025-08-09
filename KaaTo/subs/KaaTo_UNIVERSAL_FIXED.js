@@ -1,9 +1,9 @@
-// KaaTo Universal Extension v11.5.5 - MASTER PLAYLIST RETURN
+// KaaTo Universal Extension v11.5.6 - FUNCTION NAMES FIXED
 // Return master.m3u8 directly for iOS player auto-selection
 
 // Search - Del original que funciona
 async function searchResults(keyword) {
-    console.log('🔍 [v11.5.5] searchResults CALLED with keyword:', keyword);
+    console.log('🔍 [v11.5.6] searchResults CALLED with keyword:', keyword);
     try {
         const response = await fetchv2('https://kaa.to/api/search', {
             'Content-Type': 'application/json',
@@ -16,7 +16,12 @@ async function searchResults(keyword) {
         if (response && response.status === 200 && response._data) {
             let data = response._data;
             if (typeof data === 'string') {
-                data = JSON.parse(data);
+                try {
+                    data = JSON.parse(data);
+                } catch (jsonError) {
+                    console.log('❌ JSON parse error in searchResults:', jsonError.message);
+                    return JSON.stringify([]);
+                }
             }
             
             if (Array.isArray(data)) {
@@ -41,8 +46,8 @@ async function searchResults(keyword) {
 }
 
 // Details - Del original que funciona
-async function getDetails(url) {
-    console.log('🔍 [v11.5.5] getDetails CALLED with URL:', url);
+async function extractDetails(url) {
+    console.log('🔍 [v11.5.6] extractDetails CALLED with URL:', url);
     try {
         const response = await fetchv2(url, {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
@@ -72,10 +77,15 @@ async function getDetails(url) {
         
         let languages = [];
         if (langResponse && langResponse.status === 200 && langResponse._data) {
-            const langData = typeof langResponse._data === 'string' ? 
-                            JSON.parse(langResponse._data) : langResponse._data;
-            if (Array.isArray(langData)) {
-                languages = langData;
+            try {
+                const langData = typeof langResponse._data === 'string' ? 
+                                JSON.parse(langResponse._data) : langResponse._data;
+                if (Array.isArray(langData)) {
+                    languages = langData;
+                }
+            } catch (jsonError) {
+                console.log('❌ JSON parse error in languages:', jsonError.message);
+                languages = [];
             }
         }
         
@@ -95,14 +105,14 @@ async function getDetails(url) {
         });
         
     } catch (error) {
-        console.log('❌ Error in getDetails:', error.message);
+        console.log('❌ Error in extractDetails:', error.message);
         return JSON.stringify({});
     }
 }
 
 // Episodes - Del original que funciona
-async function getEpisodes(url) {
-    console.log('🔍 [v11.5.5] getEpisodes CALLED with URL:', url);
+async function extractEpisodes(url) {
+    console.log('🔍 [v11.5.6] extractEpisodes CALLED with URL:', url);
     try {
         // Extract slug from URL
         const slugMatch = url.match(/anime\/([^\/]+)/);
@@ -126,7 +136,12 @@ async function getEpisodes(url) {
         if (episodesResponse && episodesResponse.status === 200 && episodesResponse._data) {
             let episodesData = episodesResponse._data;
             if (typeof episodesData === 'string') {
-                episodesData = JSON.parse(episodesData);
+                try {
+                    episodesData = JSON.parse(episodesData);
+                } catch (jsonError) {
+                    console.log('❌ JSON parse error in episodes:', jsonError.message);
+                    return JSON.stringify([{ href: url, number: 1 }]);
+                }
             }
             
             console.log('📺 Episodes API response keys:', Object.keys(episodesData));
@@ -176,9 +191,9 @@ async function getEpisodes(url) {
     }
 }
 
-// Stream - v11.5.5 con master.m3u8 directo para player iOS
+// Stream - v11.5.6 con master.m3u8 directo para player iOS
 async function extractStreamUrl(episodeUrl) {
-    console.log('🚨🚨🚨 [v11.5.5 MASTER PLAYLIST] 🚨🚨🚨');
+    console.log('🚨🚨🚨 [v11.5.6 MASTER PLAYLIST] 🚨🚨🚨');
     console.log('⚡ extractStreamUrl CALLED AT:', new Date().toISOString());
     console.log('📍 Episode URL:', episodeUrl);
     console.log('🔥 IF YOU SEE THIS LOG, extractStreamUrl IS WORKING! 🔥');
@@ -281,7 +296,7 @@ async function extractStreamUrl(episodeUrl) {
                 console.log('🔄 FALLBACK TO LAST VIDEO ID:', selectedVideoId);
             }
             
-            // NUEVA ESTRATEGIA v11.5.5: DEVOLVER MASTER.M3U8 DIRECTO
+            // NUEVA ESTRATEGIA v11.5.6: DEVOLVER MASTER.M3U8 DIRECTO
             // Permitir que el player iOS maneje la selección automática
             const masterM3u8Url = `https://hls.krussdomi.com/manifest/${selectedVideoId}/master.m3u8`;
             console.log('🎯 CONSTRUCTED MASTER M3U8 URL:', masterM3u8Url);
