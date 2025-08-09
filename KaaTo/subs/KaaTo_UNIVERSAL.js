@@ -232,38 +232,36 @@ async function extractEpisodes(url) {
 
 // UNIVERSAL extractStreamUrl - Handles BOTH URL and HTML inputs!
 async function extractStreamUrl(input) {
-    console.log('🚨🚨🚨 [v11.0 UNIVERSAL] 🚨🚨🚨');
+    console.log('🚨🚨🚨 [v11.3 UNIVERSAL - STRING FORMAT] 🚨🚨🚨');
     console.log('⚡ extractStreamUrl CALLED AT:', new Date().toISOString());
-    console.log('📍 Input received:', typeof input, input.length > 500 ? 'HTML_CONTENT' : input);
-    console.log('🔥 UNIVERSAL VERSION - HANDLES BOTH URL AND HTML! 🔥');
+    console.log('📍 Input received:', typeof input, input && input.length > 500 ? 'HTML_CONTENT' : input);
+    console.log('🔥 RETURNING STRING LIKE ANIMEFLV! 🔥');
     
     try {
         let html;
         let episodeUrl;
         
         // DETECT INPUT TYPE
-        if (input.includes('<html') || input.includes('<!DOCTYPE') || input.includes('<body')) {
+        if (input && (input.includes('<html') || input.includes('<!DOCTYPE') || input.includes('<body'))) {
             // INPUT IS HTML - Sora already fetched it
             console.log('🌐 Input detected as: HTML CONTENT');
             html = input;
             episodeUrl = 'parsed_from_html';
-        } else {
+        } else if (input && input.startsWith('http')) {
             // INPUT IS URL - We need to fetch it
             console.log('🌐 Input detected as: EPISODE URL');
             episodeUrl = input;
             
             console.log('📡 Fetching HTML from URL...');
-            const response = await fetch(episodeUrl);
-            html = await response.text();
+            const response = await fetchv2(episodeUrl, {}, 'GET', null);
+            html = typeof response === 'object' ? await response.text() : response;
             console.log('✅ HTML fetched, length:', html.length);
+        } else {
+            console.log('❌ Invalid input type or null input');
+            return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
         }
         
-        console.log('🔍 Analyzing HTML for streams...');
-        console.log('📄 HTML preview (first 500 chars):', html.substring(0, 500));
-        console.log('📄 HTML preview (middle 500 chars):', html.substring(Math.floor(html.length/2), Math.floor(html.length/2) + 500));
-        console.log('📄 HTML contains script tags:', html.includes('<script>'));
-        console.log('📄 HTML contains video tags:', html.includes('<video'));
-        console.log('📄 HTML contains m3u8:', html.includes('m3u8'));
+        console.log('� Analyzing HTML for streams...');
         
         // PATTERN 1: Direct M3U8 URLs in HTML
         const m3u8Pattern = /https?:\/\/[^\s"'<>]+\.m3u8/gi;
@@ -271,8 +269,8 @@ async function extractStreamUrl(input) {
         
         if (m3u8Urls && m3u8Urls.length > 0) {
             console.log('🎯 FOUND DIRECT M3U8 URLs:', m3u8Urls);
-            console.log('🚀 RETURNING M3U8 STREAM:', m3u8Urls[0]);
-            return m3u8Urls[0];
+            console.log('🚀 RETURNING M3U8 STREAM (STRING):', m3u8Urls[0]);
+            return m3u8Urls[0]; // RETURN STRING DIRECTLY
         }
         
         // PATTERN 2: Video IDs for M3U8 construction - More specific patterns
@@ -283,8 +281,8 @@ async function extractStreamUrl(input) {
             console.log('🎯 FOUND VIDEO IDs:', videoIds);
             const m3u8Url = `https://krussdomi.com/m3u8/${videoIds[0]}.m3u8`;
             console.log('🔨 CONSTRUCTED M3U8 URL:', m3u8Url);
-            console.log('🚀 RETURNING CONSTRUCTED STREAM:', m3u8Url);
-            return m3u8Url;
+            console.log('🚀 RETURNING CONSTRUCTED STREAM (STRING):', m3u8Url);
+            return m3u8Url; // RETURN STRING DIRECTLY
         }
         
         // PATTERN 3: Look for KaaTo-specific patterns
@@ -296,8 +294,8 @@ async function extractStreamUrl(input) {
             const videoId = kaatoMatches[0].match(/[a-f0-9]{24}/)[0];
             const m3u8Url = `https://krussdomi.com/m3u8/${videoId}.m3u8`;
             console.log('🔨 CONSTRUCTED FROM KAATO PATTERN:', m3u8Url);
-            console.log('🚀 RETURNING KAATO STREAM:', m3u8Url);
-            return m3u8Url;
+            console.log('🚀 RETURNING KAATO STREAM (STRING):', m3u8Url);
+            return m3u8Url; // RETURN STRING DIRECTLY
         }
         
         // PATTERN 4: Look for other video patterns
@@ -306,41 +304,17 @@ async function extractStreamUrl(input) {
         
         if (mp4Urls && mp4Urls.length > 0) {
             console.log('🎯 FOUND MP4 URLs:', mp4Urls);
-            console.log('🚀 RETURNING MP4 STREAM:', mp4Urls[0]);
-            return mp4Urls[0];
+            console.log('🚀 RETURNING MP4 STREAM (STRING):', mp4Urls[0]);
+            return mp4Urls[0]; // RETURN STRING DIRECTLY
         }
         
-        // PATTERN 5: Debug all potential video-related content
-        console.log('🔍 DEBUGGING - Looking for any video-related patterns...');
-        const allVideoPatterns = [
-            /video/gi,
-            /stream/gi,
-            /m3u8/gi,
-            /mp4/gi,
-            /\.m3u8/gi,
-            /krussdomi/gi,
-            /embed/gi
-        ];
-        
-        allVideoPatterns.forEach((pattern, index) => {
-            const matches = html.match(pattern);
-            if (matches) {
-                console.log(`🔍 Pattern ${index + 1} (${pattern}) found ${matches.length} matches:`, matches.slice(0, 5));
-            }
-        });
-        
-        console.log('❌ NO STREAMS FOUND - Returning demo video');
-        console.log('🔍 Search patterns failed:');
-        console.log('  - M3U8 URLs: None found');
-        console.log('  - Video IDs: None found'); 
-        console.log('  - KaaTo patterns: None found');
-        console.log('  - MP4 URLs: None found');
+        console.log('❌ NO STREAMS FOUND - Returning demo video (STRING)');
         
     } catch (error) {
         console.log('❌ ERROR in extractStreamUrl:', error.message);
         console.log('📋 Error details:', error.stack);
     }
     
-    console.log('🔄 FALLBACK: Returning demo video');
-    return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+    console.log('🔄 FALLBACK: Returning demo video (STRING)');
+    return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"; // RETURN STRING DIRECTLY
 }

@@ -1,12 +1,12 @@
 {
-    "sourceName": "KaaTo Universal v11.3 - DEBUG INTERCEPT",
+    "sourceName": "KaaTo Universal v11.4 - STRING FORMAT",
     "iconUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/logo.png",
     "author": {
         "name": "Hawkeye182",
         "icon": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
         "url": "https://github.com/Hawkeye182/Sora-Modules-main"
     },
-    "version": "11.3.0",
+    "version": "11.4.0",
     "language": "subs",
     "streamType": "HLS",
     "quality": "1080p",
@@ -14,7 +14,7 @@
     "downloadSupport": true,
     "baseUrl": "https://kaa.to/",
     "searchBaseUrl": "https://kaa.to/api/search",
-    "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo_UNIVERSAL.js?v=11.3.0",
+    "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo_UNIVERSAL.js?v=11.4.0",
     "asyncJS": true,
     "streamAsyncJS": true,
     "softsub": true
