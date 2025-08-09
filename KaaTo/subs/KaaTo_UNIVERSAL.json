@@ -1,5 +1,5 @@
 {
-    "sourceName": "KaaTo Universal",
+    "sourceName": "KaaTo Universal v11.0 - HTML+URL Support",
     "iconUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/logo.png",
     "author": {
         "name": "Hawkeye182",
@@ -7,15 +7,15 @@
         "url": "https://github.com/Hawkeye182/Sora-Modules-main"
     },
     "version": "11.0.0",
-    "language": "Multi (JP/EN/ES)",
+    "language": "subs",
     "streamType": "HLS",
     "quality": "1080p",
     "type": "anime",
     "downloadSupport": true,
     "baseUrl": "https://kaa.to/",
     "searchBaseUrl": "https://kaa.to/api/search",
-    "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo_UNIVERSAL.js",
+    "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo_UNIVERSAL.js?v=11.0.0",
     "asyncJS": true,
     "streamAsyncJS": true,
-    "softsub": false
+    "softsub": true
 }

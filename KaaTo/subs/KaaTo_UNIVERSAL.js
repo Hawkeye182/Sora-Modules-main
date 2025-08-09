@@ -1,90 +1,72 @@
-/*
- * KaaTo UNIVERSAL Module v11.0 - SORA INTEGRATION COMPLETE
- * Handles BOTH URL and HTML inputs for extractStreamUrl
- * Based on real Sora calling patterns analysis
- */
+// KaaTo Universal Extension v11.0 - SORA COMPATIBLE (HTML+URL Support)
+// Exact copy of PERFECT functions with UNIVERSAL extractStreamUrl
 
-// Search - Working perfectly
-async function searchAnime(query) {
-    console.log('🔍 [KaaTo v11.0] Search started for:', query);
-    
+// Search - Del PERFECT que funciona EXACTO
+async function searchResults(keyword) {
+    console.log('🔍 [v11.0] searchResults CALLED with keyword:', keyword);
     try {
-        const searchUrl = `https://kaa.to/api/search?q=${encodeURIComponent(query)}&type=0`;
-        console.log('🌐 Search URL:', searchUrl);
-        
-        const response = await fetchv2(searchUrl);
+        const response = await fetchv2('https://kaa.to/api/search', {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Origin': 'https://kaa.to',
+            'Referer': 'https://kaa.to/',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }, 'POST', JSON.stringify({ query: keyword }));
         
         if (response && response.status === 200 && response._data) {
-            let data;
-            try {
-                data = typeof response._data === 'string' ? 
-                      JSON.parse(response._data) : response._data;
-            } catch (e) {
-                console.log('❌ Failed to parse search response');
-                return "[]";
+            let data = response._data;
+            if (typeof data === 'string') {
+                data = JSON.parse(data);
             }
             
-            if (data && data.result && Array.isArray(data.result)) {
-                const results = data.result.map(item => ({
-                    title: item.name || 'Unknown Title',
-                    href: `https://kaa.to/anime/${item.slug}`,
-                    image: item.image_url || ''
+            if (Array.isArray(data)) {
+                const results = data.map(item => ({
+                    title: item.title || 'Unknown Title',
+                    image: item.poster && item.poster.hq ? 
+                           `https://kaa.to/image/poster/${item.poster.hq}.webp` : '',
+                    href: `https://kaa.to/anime/${item.slug}`
                 }));
                 
-                console.log(`✅ Search found ${results.length} results`);
                 return JSON.stringify(results);
+            } else {
+                return JSON.stringify([]);
             }
+        } else {
+            return JSON.stringify([]);
         }
-        
-        console.log('❌ Search failed or no results');
-        return "[]";
-        
     } catch (error) {
-        console.log('❌ Search error:', error.message);
-        return "[]";
+        return JSON.stringify([]);
     }
 }
 
-// Details - Working perfectly  
+// Details - EXACTO como PERFECT que SÍ funciona
 async function extractDetails(url) {
-    console.log('📋 [KaaTo v11.0] Details extraction for:', url);
-    
+    console.log('� [v11.0] extractDetails CALLED with URL:', url);
     try {
-        const response = await fetchv2(url);
+        const slug = url.split('/anime/')[1] || url.split('/').pop();
+        const response = await fetchv2(`https://kaa.to/api/show/${slug}`);
         
-        if (response && response.status === 200 && response._data) {
-            let data;
-            try {
-                data = typeof response._data === 'string' ? 
-                      JSON.parse(response._data) : response._data;
-            } catch (e) {
-                console.log('❌ Failed to parse details response');
-                return JSON.stringify([{
-                    description: "No description available",
-                    aliases: "",
-                    airdate: ""
-                }]);
+        if (response && response._data) {
+            let details = response._data;
+            if (typeof details === 'string') {
+                details = JSON.parse(details);
             }
             
-            const result = [{
-                description: data.description || "No description available",
-                aliases: (data.alternative_names || []).join(', ') || "",
-                airdate: data.aired_from || ""
-            }];
-            
-            console.log('✅ Details extracted successfully');
-            return JSON.stringify(result);
+            return JSON.stringify([{
+                description: details.description || "No description available",
+                aliases: details.alternative_names ? details.alternative_names.join(', ') : "",
+                airdate: details.aired_from || ""
+            }]);
         }
         
-        console.log('❌ Details extraction failed');
         return JSON.stringify([{
-            description: "No description available", 
+            description: "No description available",
             aliases: "",
             airdate: ""
         }]);
         
     } catch (error) {
-        console.log('❌ Details error:', error.message);
+        console.log('❌ [v11.0] Details error:', error.message);
         return JSON.stringify([{
             description: "Error loading details",
             aliases: "",
@@ -93,24 +75,27 @@ async function extractDetails(url) {
     }
 }
 
-// Episodes - Working perfectly
+// Episodes - EXACTO como PERFECT que SÍ funciona
 async function extractEpisodes(url) {
-    console.log('📺 [KaaTo v11.0] Episodes extraction for:', url);
+    console.log('📺 [v11.0] extractEpisodes CALLED with URL:', url);
     
     try {
         // Extract slug from URL
         const urlMatch = url.match(/\/anime\/([^\/]+)/);
         if (!urlMatch || !urlMatch[1]) {
             console.log('❌ Could not extract slug from URL');
-            return JSON.stringify([{ href: url, number: 1 }]);
+            return JSON.stringify([{
+                href: url,
+                number: 1
+            }]);
         }
         
         const slug = urlMatch[1];
         console.log('🎯 Extracted slug:', slug);
         
-        // Get available languages
+        // Get available languages first
         const langResponse = await fetchv2(`https://kaa.to/api/show/${slug}`);
-        let selectedLanguage = 'ja-JP'; // Default
+        let selectedLanguage = 'ja-JP'; // Default to Japanese
         
         if (langResponse && langResponse.status === 200 && langResponse._data) {
             let langData;
@@ -118,13 +103,14 @@ async function extractEpisodes(url) {
                 langData = typeof langResponse._data === 'string' ? 
                           JSON.parse(langResponse._data) : langResponse._data;
             } catch (e) {
-                console.log('❌ Failed to parse language response');
+                console.log('Failed to parse language response');
             }
             
             if (langData && langData.available_languages) {
                 const availableLanguages = Object.keys(langData.available_languages);
-                console.log('🗣️ Available languages:', availableLanguages);
+                console.log('Available languages:', availableLanguages);
                 
+                // Buscar japonés primero, luego inglés como fallback
                 const jaLang = availableLanguages.find(lang => lang.includes('ja-JP'));
                 const enLang = availableLanguages.find(lang => lang.includes('en-US'));
                 
@@ -138,9 +124,9 @@ async function extractEpisodes(url) {
             }
         }
         
-        console.log('🗣️ Using language:', selectedLanguage);
+        console.log('Using language:', selectedLanguage);
         
-        // Get episodes
+        // Obtener episodios con el idioma seleccionado
         const episodesResponse = await fetchv2(`https://kaa.to/api/show/${slug}/episodes?ep=1&lang=${selectedLanguage}`);
         
         if (episodesResponse && episodesResponse.status === 200 && episodesResponse._data) {
@@ -149,25 +135,32 @@ async function extractEpisodes(url) {
                 episodesData = typeof episodesResponse._data === 'string' ? 
                               JSON.parse(episodesResponse._data) : episodesResponse._data;
             } catch (e) {
-                console.log('❌ Failed to parse episodes response');
-                return JSON.stringify([{ href: url, number: 1 }]);
+                console.log('Failed to parse episodes response');
+                return JSON.stringify([{
+                    href: url,
+                    number: 1
+                }]);
             }
             
             if (episodesData && episodesData.result && episodesData.result.length > 0) {
-                console.log(`📺 Found ${episodesData.result.length} episodes on first page`);
+                console.log(`Found ${episodesData.result.length} episodes on first page`);
                 
+                // Si hay información de paginación, obtener todos los episodios
                 const allEpisodes = [];
                 
-                // Handle pagination if exists
+                // Estrategia 1: Usar la información de pages para obtener todos los números de episodio
                 if (episodesData.pages && Array.isArray(episodesData.pages) && episodesData.pages.length > 1) {
-                    console.log(`📄 Found ${episodesData.pages.length} pages of episodes`);
+                    console.log(`Found ${episodesData.pages.length} pages of episodes`);
                     
+                    // Generar todos los números de episodio de todas las páginas
                     episodesData.pages.forEach(page => {
                         if (page.eps && Array.isArray(page.eps)) {
                             page.eps.forEach(epNum => {
+                                // Buscar el slug correspondiente en los resultados actuales
                                 const episodeData = episodesData.result.find(ep => ep.episode_number === epNum);
                                 const episodeSlug = episodeData ? episodeData.slug : `missing-${epNum}`;
                                 
+                                // FORMATO CORRECTO: https://kaa.to/{show_slug}/ep-{episode_number}-{episode_slug}
                                 allEpisodes.push({
                                     href: `https://kaa.to/${slug}/ep-${epNum}-${episodeSlug}`,
                                     number: epNum
@@ -176,7 +169,7 @@ async function extractEpisodes(url) {
                         }
                     });
                 } else {
-                    // Single page
+                    // Si no hay paginación, usar solo los episodios de la primera página
                     episodesData.result.forEach(ep => {
                         allEpisodes.push({
                             href: `https://kaa.to/${slug}/ep-${ep.episode_number}-${ep.slug}`,
@@ -185,17 +178,23 @@ async function extractEpisodes(url) {
                     });
                 }
                 
-                console.log(`✅ Generated ${allEpisodes.length} episode links`);
+                console.log(`Generated ${allEpisodes.length} episode links`);
                 return JSON.stringify(allEpisodes);
             }
         }
         
-        console.log('❌ No episodes found, returning single episode');
-        return JSON.stringify([{ href: url, number: 1 }]);
+        // Fallback
+        return JSON.stringify([{
+            href: url,
+            number: 1
+        }]);
         
     } catch (error) {
-        console.log('❌ Episodes error:', error.message);
-        return JSON.stringify([{ href: url, number: 1 }]);
+        console.log('Episodes error: ' + error.message);
+        return JSON.stringify([{
+            href: url,
+            number: 1
+        }]);
     }
 }
 
