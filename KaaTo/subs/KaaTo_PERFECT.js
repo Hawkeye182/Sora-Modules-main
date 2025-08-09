@@ -215,36 +215,45 @@ async function extractStreamUrl(episodeUrl) {
             console.log('✅ Successfully loaded episode page');
             const html = pageResponse._data;
             
+            // Debug: Mostrar un fragmento del HTML para debug
+            console.log('📄 HTML length:', html.length);
+            console.log('📄 HTML sample (first 500 chars):', html.substring(0, 500));
+            
             // Estrategia 2: Buscar diferentes patrones de datos del servidor
             const patterns = [
-                /window\.KAA\s*=\s*({.*?});/s,
-                /window\._kaa\s*=\s*({.*?});/s,
-                /var\s+servers\s*=\s*({.*?});/s,
-                /const\s+servers\s*=\s*({.*?});/s,
-                /"servers":\s*(\[.*?\])/s,
-                /data-servers=["']({.*?})["']/s,
-                /servers:\s*(\[.*?\])/s
+                { name: 'window.KAA', regex: /window\.KAA\s*=\s*({.*?});/s },
+                { name: 'window._kaa', regex: /window\._kaa\s*=\s*({.*?});/s },
+                { name: 'var servers', regex: /var\s+servers\s*=\s*({.*?});/s },
+                { name: 'const servers', regex: /const\s+servers\s*=\s*({.*?});/s },
+                { name: 'servers json', regex: /"servers":\s*(\[.*?\])/s },
+                { name: 'data-servers', regex: /data-servers=["']({.*?})["']/s },
+                { name: 'servers object', regex: /servers:\s*(\[.*?\])/s }
             ];
             
             let serverData = null;
             let foundPattern = null;
             
-            for (const pattern of patterns) {
-                const match = html.match(pattern);
+            for (const patternObj of patterns) {
+                console.log(`🔍 Testing pattern: ${patternObj.name}`);
+                const match = html.match(patternObj.regex);
                 if (match) {
+                    console.log(`✅ Match found for ${patternObj.name}! Raw data:`, match[1].substring(0, 200) + '...');
                     try {
                         serverData = JSON.parse(match[1]);
-                        foundPattern = pattern;
-                        console.log('✅ Found server data with pattern:', pattern.source);
+                        foundPattern = patternObj.name;
+                        console.log('✅ Successfully parsed server data for', patternObj.name, ':', serverData);
                         break;
                     } catch (e) {
-                        console.log('❌ Failed to parse match from pattern:', pattern.source);
+                        console.log(`❌ Failed to parse JSON for ${patternObj.name}:`, e.message);
                     }
+                } else {
+                    console.log(`❌ No match found for ${patternObj.name}`);
                 }
             }
             
             if (serverData) {
-                console.log('Server data found:', serverData);
+                console.log('✅ Server data found with pattern:', foundPattern);
+                console.log('📊 Server data structure:', JSON.stringify(serverData, null, 2));
                 
                 // Estrategia 3: Extraer URLs de streaming
                 let streamUrls = [];
@@ -303,6 +312,7 @@ async function extractStreamUrl(episodeUrl) {
             }
             
             // Estrategia 4: Buscar patrones de URL directamente en el HTML
+            console.log('🔍 Strategy 4: Searching for direct URL patterns in HTML...');
             const urlPatterns = [
                 /https:\/\/krussdomi\.com\/m3u8\/[a-f0-9]{24}\.m3u8/g,
                 /https:\/\/[^"'<>\s]+\.m3u8/g,
@@ -310,12 +320,14 @@ async function extractStreamUrl(episodeUrl) {
             ];
             
             for (const urlPattern of urlPatterns) {
+                console.log('🔍 Testing URL pattern:', urlPattern.source);
                 const matches = html.match(urlPattern);
                 if (matches && matches.length > 0) {
-                    console.log(`Found ${matches.length} potential URLs with pattern`);
+                    console.log(`✅ Found ${matches.length} potential URLs with pattern:`, matches);
                     
                     for (const foundUrl of matches) {
                         try {
+                            console.log('🧪 Testing URL:', foundUrl);
                             const testResponse = await fetchv2(foundUrl, {
                                 'Accept': 'application/vnd.apple.mpegurl, application/x-mpegurl, */*',
                                 'Origin': 'https://kaa.to',
@@ -325,13 +337,19 @@ async function extractStreamUrl(episodeUrl) {
                             if (testResponse && testResponse.status === 200) {
                                 console.log('✅ SUCCESS! Working stream found:', foundUrl);
                                 return foundUrl;
+                            } else {
+                                console.log('❌ URL test failed - status:', testResponse ? testResponse.status : 'null');
                             }
                         } catch (e) {
-                            console.log('❌ URL test failed:', foundUrl);
+                            console.log('❌ URL test failed with error:', foundUrl, e.message);
                         }
                     }
+                } else {
+                    console.log('❌ No URLs found with pattern:', urlPattern.source);
                 }
             }
+            
+            console.log('❌ All HTML parsing strategies failed');
             
         } else {
             console.log('❌ Failed to load episode page. Status:', pageResponse ? pageResponse.status : 'null');
