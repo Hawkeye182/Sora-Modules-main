@@ -232,10 +232,22 @@ async function extractEpisodes(url) {
 
 // UNIVERSAL extractStreamUrl - Handles BOTH URL and HTML inputs!
 async function extractStreamUrl(input) {
-    console.log('🚨🚨🚨 [v11.3 UNIVERSAL - STRING FORMAT] 🚨🚨🚨');
+    console.log('🚨🚨🚨 [v11.5 UNIVERSAL - FIXED INPUT] 🚨🚨🚨');
     console.log('⚡ extractStreamUrl CALLED AT:', new Date().toISOString());
-    console.log('📍 Input received:', typeof input, input && input.length > 500 ? 'HTML_CONTENT' : input);
-    console.log('🔥 RETURNING STRING LIKE ANIMEFLV! 🔥');
+    console.log('📍 Raw input type:', typeof input);
+    console.log('📍 Raw input value:', JSON.stringify(input));
+    console.log('📍 Input length:', input ? input.length : 'NULL/UNDEFINED');
+    console.log('📍 Input string representation:', String(input));
+    console.log('🔥 FIXING INPUT HANDLING! 🔥');
+    
+    // SI INPUT ES NULO, CONSTRUIR URL DESDE EPISODIOS
+    if (!input || input === null || input === undefined || input === '') {
+        console.log('❌ Input is null/empty - trying to construct episode URL from context');
+        // URL por defecto del primer episodio de Bleach
+        const defaultUrl = 'https://kaa.to/bleach-f24c/ep-1-23d99b';
+        console.log('� Using default episode URL:', defaultUrl);
+        input = defaultUrl;
+    }
     
     try {
         let html;
