@@ -1,7 +1,9 @@
-// KaaTo Universal Extension v11.0 - SORA COMPATIBLE (HTML+URL Support)
+// KaaTo Universal Extension v12.0 - CACHE BUSTER FOR SORA
 // Exact copy of PERFECT functions with UNIVERSAL extractStreamUrl
 
-console.log('🚨🚨🚨 [UNIVERSAL DEBUG] MODULE LOADED AT:', new Date().toISOString());
+console.log('🚨🚨🚨 [v12.0 CACHE BUSTER] MODULE STARTING TO LOAD 🚨🚨🚨');
+console.log('🎯 [v12.0] TIMESTAMP:', new Date().toISOString());
+console.log('🔥 [v12.0] IF YOU SEE THIS - NEW VERSION LOADED! 🔥');
 
 // =============================================================================
 // DEBUG: INTERCEPT ALL POSSIBLE SORA CALLS
@@ -232,13 +234,13 @@ async function extractEpisodes(url) {
 
 // UNIVERSAL extractStreamUrl - Handles BOTH URL and HTML inputs!
 async function extractStreamUrl(input) {
-    console.log('🚨🚨🚨 [v11.5 UNIVERSAL - FIXED INPUT] 🚨🚨🚨');
+    console.log('🚨🚨🚨 [v12.0 CACHE BUSTER - STREAM EXTRACTION] 🚨🚨🚨');
     console.log('⚡ extractStreamUrl CALLED AT:', new Date().toISOString());
     console.log('📍 Raw input type:', typeof input);
     console.log('📍 Raw input value:', JSON.stringify(input));
     console.log('📍 Input length:', input ? input.length : 'NULL/UNDEFINED');
     console.log('📍 Input string representation:', String(input));
-    console.log('🔥 FIXING INPUT HANDLING! 🔥');
+    console.log('🔥 v12.0 - FIXED INPUT HANDLING! 🔥');
     
     // SI INPUT ES NULO, CONSTRUIR URL DESDE EPISODIOS
     if (!input || input === null || input === undefined || input === '') {
