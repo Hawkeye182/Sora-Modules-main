@@ -63,6 +63,12 @@ async function extractDetails(url) {
                     airdate: 'Unknown'
                 }]);
             }
+        } else {
+            return JSON.stringify([{
+                description: 'Error loading details - no response',
+                aliases: '',
+                airdate: 'Unknown'
+            }]);
         }
     } catch (error) {
         console.log('Details error: ' + error.message);
@@ -201,31 +207,30 @@ async function extractEpisodes(url) {
 // Stream - Demo sin Cloudflare
 async function extractStreamUrl(episodeUrl) {
     try {
-        const episodeIdMatch = episodeUrl.match(/\/episode\/([a-f0-9]{24})/);
+        console.log('Extracting demo stream for episode:', episodeUrl);
         
-        if (episodeIdMatch) {
-            const episodeId = episodeIdMatch[1];
-            
-            const streamOptions = [
-                "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8",
-                "https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8",
-                "https://multiplatform-f.akamaihd.net/i/multi/will/bunny/big_buck_bunny_,640x360_400,640x360_700,640x360_1000,950x540_1500,.mp4.csmil/master.m3u8"
-            ];
-            
-            let hash = 0;
-            for (let i = 0; i < episodeId.length; i++) {
-                const char = episodeId.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash = hash & hash;
-            }
-            
-            const streamIndex = Math.abs(hash) % streamOptions.length;
-            return streamOptions[streamIndex];
-        } else {
-            return "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8";
-        }
+        // Extraer información del episodio para dar una respuesta más variada
+        const episodeMatch = episodeUrl.match(/ep-(\d+)/);
+        const episodeNumber = episodeMatch ? parseInt(episodeMatch[1]) : 1;
+        
+        // Usar diferentes streams de demo basados en el número de episodio
+        const streamOptions = [
+            "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+            "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+            "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+            "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4"
+        ];
+        
+        // Seleccionar stream basado en el número de episodio
+        const streamIndex = (episodeNumber - 1) % streamOptions.length;
+        const selectedStream = streamOptions[streamIndex];
+        
+        console.log(`Selected demo stream ${streamIndex + 1} for episode ${episodeNumber}:`, selectedStream);
+        return selectedStream;
         
     } catch (error) {
-        return "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8";
+        console.log('Stream error: ' + error.message);
+        return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
     }
 }
