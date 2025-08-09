@@ -1,6 +1,7 @@
-// KaaTo Perfect Extension v10.7 - AnimeFLV Pattern + Immediate Debug
+// KaaTo Perfect Extension v10.8 - FULL DEBUG MODE
 // Search - Del original que funciona
 async function searchResults(keyword) {
+    console.log('🔍 [v10.8] searchResults CALLED with keyword:', keyword);
     try {
         const response = await fetchv2('https://kaa.to/api/search', {
             'Content-Type': 'application/json',
@@ -38,6 +39,7 @@ async function searchResults(keyword) {
 
 // Details - EXACTO como SIMPLE_TEST que SÍ funciona
 async function extractDetails(url) {
+    console.log('📄 [v10.8] extractDetails CALLED with URL:', url);
     try {
         const slug = url.split('/anime/')[1] || url.split('/').pop();
         const response = await fetchv2(`https://kaa.to/api/show/${slug}`);
@@ -64,6 +66,7 @@ async function extractDetails(url) {
 
 // Episodes - EXACTAMENTE del STREAM_FIXED que funcionaba bien
 async function extractEpisodes(url) {
+    console.log('📺 [v10.8] extractEpisodes CALLED with URL:', url);
     try {
         const slug = url.split('/').pop();
         
@@ -169,6 +172,10 @@ async function extractEpisodes(url) {
                 allEpisodes.sort((a, b) => a.number - b.number);
                 
                 console.log(`Returning ${allEpisodes.length} episodes for ${slug}`);
+                console.log('🔗 [v10.8] Sample episode URLs generated:');
+                allEpisodes.slice(0, 3).forEach((ep, i) => {
+                    console.log(`   Episode ${ep.number}: ${ep.href}`);
+                });
                 return JSON.stringify(allEpisodes);
             }
         }

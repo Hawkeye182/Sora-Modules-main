@@ -1,12 +1,12 @@
 {
-    "sourceName": "KaaTo Perfect v10.7 - Simple Debug",
+    "sourceName": "KaaTo Perfect v10.8 - Full Debug",
     "iconUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/logo.png",
     "author": {
         "name": "Hawkeye182",
         "icon": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
         "url": "https://github.com/Hawkeye182/Sora-Modules-main"
     },
-    "version": "10.7.0",
+    "version": "10.8.0",
     "language": "subs",
     "streamType": "HLS",
     "quality": "1080p",

@@ -1,0 +1,12 @@
+{
+  "name": "KaaTo Universal",
+  "author": "KaaTo Team",
+  "version": "11.0.0",
+  "metadata": {
+    "baseUrl": "https://kaa.to",
+    "novel": false,
+    "asyncJS": true,
+    "streamAsyncJS": true,
+    "softsub": false
+  }
+}
