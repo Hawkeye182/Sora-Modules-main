@@ -6,16 +6,14 @@
         "icon": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
         "url": "https://github.com/Hawkeye182/Sora-Modules-main"
     },
-    "version": "1.1.0",
+    "version": "2.0.0",
     "language": "subs",
-    "streamType": "HLS",
+    "streamType": "MP4",
     "quality": "720p",
     "type": "anime",
-    "downloadSupport": true,
     "baseUrl": "https://kaa.to/",
     "searchBaseUrl": "https://kaa.to/api/search",
-    "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo_SIMPLE_TEST.js?v=1.1.0",
+    "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo_SIMPLE_TEST.js?v=2.0.0",
     "asyncJS": true,
-    "streamAsyncJS": true,
-    "softsub": true
+    "streamAsyncJS": true
 }

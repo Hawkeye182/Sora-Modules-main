@@ -387,16 +387,9 @@ async function extractStreamUrl(url) {
             if (m3u8Data.success && m3u8Data.streams.video.length > 0) {
                 const bestStream = m3u8Data.streams.video[0];
                 
-                return JSON.stringify({
-                    streamUrl: bestStream.url,
-                    quality: bestStream.resolution || "1080p",
-                    type: "hls",
-                    headers: {
-                        'Origin': 'https://krussdomi.com',
-                        'Referer': 'https://krussdomi.com/',
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                    }
-                });
+                // Return stream URL as string (like AnimeFlv)
+                console.log('Returning stream URL as string:', bestStream.url);
+                return bestStream.url;
             }
         } catch (m3u8Error) {
             console.log('M3U8 extraction failed:', m3u8Error.message);
@@ -418,16 +411,9 @@ async function extractStreamUrl(url) {
                 if (m3u8Data.success && m3u8Data.streams.video.length > 0) {
                     const bestStream = m3u8Data.streams.video[0];
                     
-                    return JSON.stringify({
-                        streamUrl: bestStream.url,
-                        quality: bestStream.resolution || "1080p",
-                        type: "hls",
-                        headers: {
-                            'Origin': 'https://krussdomi.com',
-                            'Referer': 'https://krussdomi.com/',
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                        }
-                    });
+                    // Return stream URL as string (like AnimeFlv)
+                    console.log('Returning M3U8 stream URL as string:', bestStream.url);
+                    return bestStream.url;
                 }
             } catch (e) {
                 // Continuar con el siguiente ID
@@ -436,24 +422,11 @@ async function extractStreamUrl(url) {
         }
         
         // Último recurso: retornar un stream de prueba para debug
-        return JSON.stringify({
-            streamUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-            quality: "720p",
-            type: "mp4",
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
-        });
+        console.log('Returning fallback stream URL as string');
+        return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
         
     } catch (error) {
         console.log('Stream error: ' + error.message);
-        return JSON.stringify({
-            streamUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-            quality: "Error",
-            type: "mp4",
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
-        });
+        return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
     }
 }

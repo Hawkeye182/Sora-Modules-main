@@ -71,20 +71,11 @@ async function extractEpisodes(url) {
 
 async function extractStreamUrl(url) {
     try {
-        // SIEMPRE retornar un stream que funcione para testing
-        return JSON.stringify({
-            streamUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-            quality: "720p",
-            type: "hls", // Cambiar a HLS porque JSON dice streamType: "HLS"
-            headers: {}   // Headers vacíos para evitar problemas
-        });
+        // IMPORTANTE: Sora espera solo la URL del stream como STRING,
+        // NO un objeto JSON con headers y metadata
+        return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
         
     } catch (error) {
-        return JSON.stringify({
-            streamUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-            quality: "ERROR",
-            type: "hls",
-            headers: {}
-        });
+        return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
     }
 }

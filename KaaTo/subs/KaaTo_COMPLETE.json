@@ -8,14 +8,12 @@
     },
     "version": "3.2.0",
     "language": "subs",
-    "streamType": "HLS",
+    "streamType": "MP4",
     "quality": "1080p",
     "type": "anime",
-    "downloadSupport": true,
     "baseUrl": "https://kaa.to/",
     "searchBaseUrl": "https://kaa.to/api/search",
     "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo_COMPLETE.js?v=3.2.0",
     "asyncJS": true,
-    "streamAsyncJS": true,
-    "softsub": true
+    "streamAsyncJS": true
 }
