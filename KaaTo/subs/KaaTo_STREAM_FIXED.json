@@ -1,12 +1,12 @@
 {
-    "sourceName": "KaaTo Complete M3U8",
+    "sourceName": "KaaTo Stream Fixed",
     "iconUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/logo.png",
     "author": {
         "name": "Hawkeye182",
         "icon": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/ofchaos.jpg",
         "url": "https://github.com/Hawkeye182/Sora-Modules-main"
     },
-    "version": "3.2.0",
+    "version": "3.3.0",
     "language": "subs",
     "streamType": "HLS",
     "quality": "1080p",
@@ -14,7 +14,7 @@
     "downloadSupport": true,
     "baseUrl": "https://kaa.to/",
     "searchBaseUrl": "https://kaa.to/api/search",
-    "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo_COMPLETE.js?v=3.2.0",
+    "scriptUrl": "https://raw.githubusercontent.com/Hawkeye182/Sora-Modules-main/refs/heads/main/KaaTo/subs/KaaTo_STREAM_FIXED.js?v=3.3.0",
     "asyncJS": true,
     "streamAsyncJS": true,
     "softsub": true
